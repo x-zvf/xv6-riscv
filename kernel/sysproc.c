@@ -89,3 +89,12 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_nsc(void) {
+  int a,b;
+  argint(0, &a);
+  argint(1, &b);
+  printf("NSC: received %d, %d\n", a, b);
+  return a*b;
+}
