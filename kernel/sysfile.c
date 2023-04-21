@@ -503,3 +503,11 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_shutdown(void)
+{
+  printf("Terminating system\n");
+  timerhalt();
+  return 0;
+}
