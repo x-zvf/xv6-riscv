@@ -91,10 +91,9 @@ sys_uptime(void)
 }
 
 uint64
-sys_nsc(void) {
-  int a,b;
-  argint(0, &a);
-  argint(1, &b);
-  printf("NSC: received %d, %d\n", a, b);
-  return a*b;
+sys_shutdown(void)
+{
+  printf("Terminating system\n");
+  timerhalt();
+  return 0;
 }
