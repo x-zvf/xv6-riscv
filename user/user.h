@@ -1,3 +1,15 @@
+/*! \file user.h
+ * \brief header for userspace standard library
+ */
+
+#ifndef INCLUDED_user_user_h
+#define INCLUDED_user_user_h
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 struct stat;
 
 // system calls
@@ -23,6 +35,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int shutdown(void);
+void cxx(int);
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -40,3 +53,11 @@ void free(void*);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
