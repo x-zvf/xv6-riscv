@@ -17,4 +17,3 @@ user/usys.S
 .gdbinit
 .gdb_history
 devenv.sh
-.vscode/**

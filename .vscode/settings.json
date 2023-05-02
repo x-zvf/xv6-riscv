@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "cstdio": "c"
+    },
+    "files.exclude": {
+        "**/*.asm": true,
+        "**/*.d": true,
+        "**/*.o": true,
+        "**/*.sym": true
+    }
+}
