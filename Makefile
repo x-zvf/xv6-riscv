@@ -58,6 +58,8 @@ LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
+ASFLAGS += -I.
+
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb3 -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
@@ -103,7 +105,7 @@ $U/initcode: $U/initcode.S
 tags: $(OBJS) _init
 	etags *.S *.c
 
-ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
+ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o $U/bmalloc.o
 
 _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $^
@@ -150,6 +152,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_shutdown\
 	$U/_cxxtest\
+	$U/_malloc_test
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
@@ -188,4 +191,14 @@ qemu: $K/kernel fs.img
 qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+
+LANGUAGE_EXTENSION = c cpp cxx c++ cc
+COMPILETESTFOLDER = test
+COMPILETEST = $(foreach ext,$(LANGUAGE_EXTENSION),$(wildcard $(COMPILETESTFOLDER)/*.$(ext)))
+COMPILEOUT = $(foreach ext,$(LANGUAGE_EXTENSION),$(patsubst %.$(ext),%.o, $(filter %.$(ext),$(COMPILETEST))))
+#$(info $$(COMPILETEST) is $(COMPILETEST))
+#$(info $$(COMPILEOUT) is $(COMPILEOUT))
+
+test: $(COMPILEOUT)
 

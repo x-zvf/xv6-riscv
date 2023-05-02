@@ -9,8 +9,8 @@
 extern "C" {
 #endif
 
+#include "kernel/stat.h"
 
-struct stat;
 
 // system calls
 int fork(void);

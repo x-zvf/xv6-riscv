@@ -2,6 +2,8 @@
 // ramdisk that uses the disk image loaded by qemu -initrd fs.img
 //
 
+//! \attention broken, do not try to compile
+
 #include "types.h"
 #include "riscv.h"
 #include "defs.h"
@@ -11,6 +13,9 @@
 #include "sleeplock.h"
 #include "fs.h"
 #include "buf.h"
+
+#define B_VALID 1 << 0
+#define B_DIRTY 1 << 1
 
 void
 ramdiskinit(void)
