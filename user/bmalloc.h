@@ -18,7 +18,8 @@ struct MallocHeader {
     struct MallocHeader *next;
     // struct MallocHeader *prev;
     uint32_t size;
-    // unsigned int:1 used;
+    unsigned char used:1;
+    unsigned char is_special:1; // is it in a BucketPage?
 };
 
 // yes, this could be made more memory efficient, having a dynamic bitset size, and hiding the bucket size in the pointer
@@ -37,8 +38,7 @@ struct BucketPage {
 
 #define MALLOC_NUM_BUCKETS 7 // 16, 32, 64, 128, 256, 512, 1024
 struct MallocMeta {
-    struct BucketPage *fixed_size_buckets[MALLOC_NUM_BUCKETS];
-    struct BucketPage *fixed_size_buckets_with_free[MALLOC_NUM_BUCKETS]; 
+    struct BucketPage *fixed_size_buckets[MALLOC_NUM_BUCKETS]; 
     struct MallocHeader *free_list;
 };
 
