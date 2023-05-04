@@ -27,8 +27,7 @@ struct MallocHeader {
 struct BucketPage {
     struct MallocHeader malloc_header;
     struct BucketPage *next;
-    uint8_t bucket_size; // stored as a power of two 1024 Bytes => bucket_size=10, 16bytes => 4
-    uint8_t reserved[3];
+    uint64_t element_size;
     uint64_t free_bitset[4]; // there are at most PG_SIZE / 16 = 256 allocations/page
     unsigned char data[]; // at least alignof(uint64_t) == 8 bytes aligned
 };
@@ -38,7 +37,8 @@ struct BucketPage {
 
 #define MALLOC_NUM_BUCKETS 7 // 16, 32, 64, 128, 256, 512, 1024
 struct MallocMeta {
-    struct BucketPage *fixed_size_buckets[MALLOC_NUM_BUCKETS]; 
+    struct BucketPage *fixed_size_buckets[MALLOC_NUM_BUCKETS];
+    struct BucketPage *fixed_size_buckets_with_free[MALLOC_NUM_BUCKETS]; 
     struct MallocHeader *free_list;
 };
 
