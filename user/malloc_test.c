@@ -46,7 +46,7 @@ void test_malloc(void) {
 void test_balloc(void) {
   setup_balloc();
   {
-    block foo = block_alloc(20, _Alignof(int));
+    block foo = block_alloc(20, 4096);
     if(foo.begin) {
       int *bar = foo.begin;
       int sum = bar[0] + bar[1];
