@@ -14,34 +14,6 @@ extern "C" {
 #include "kernel/riscv.h"
 
 
-struct MallocHeader {
-    struct MallocHeader *next;
-    // struct MallocHeader *prev;
-    uint32_t size;
-    unsigned char used:1;
-    unsigned char is_special:1; // is it in a BucketPage?
-};
-
-// yes, this could be made more memory efficient, having a dynamic bitset size, and hiding the bucket size in the pointer
-// For 16 byte Buckets, that could reduce the header size from 48-bytes to 40 bytes, at the cost of code complexity.
-// As it stands, the header takes up about 1.2% of the total size.
-struct BucketPage {
-    struct MallocHeader malloc_header;
-    struct BucketPage *next;
-    uint64_t element_size;
-    uint64_t free_bitset[4]; // there are at most PG_SIZE / 16 = 256 allocations/page
-    unsigned char data[]; // at least alignof(uint64_t) == 8 bytes aligned
-};
-
-#define NUM_ITEMS_IN_BUCKETPAGE(size) ((PGSIZE-sizeof(struct BucketPage)/size))
-
-
-#define MALLOC_NUM_BUCKETS 7 // 16, 32, 64, 128, 256, 512, 1024
-struct MallocMeta {
-    struct BucketPage *fixed_size_buckets[MALLOC_NUM_BUCKETS]; 
-    struct MallocHeader *free_list;
-};
-
 /*!
  * \brief block allocator struct
  * wraps pointer, size and alignment
