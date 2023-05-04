@@ -46,7 +46,7 @@ inline static uint index_of_p2(uint v) {
 static struct MallocMeta malloc_meta;
 
 static struct MallocHeader *malloc_internal(uint nbytes, uint alignment) {
-
+  
 }
 
 //array length 4
@@ -60,18 +60,25 @@ static uint64_t find_first_unset(uint64_t bitset[]) {
   return 256;
 }
 
+#define ALL_BUT_64 0xFFFFFFFFFFFFFFC0
+
 static void *allocate_in_bucket(uint bucketIndex) {
   BucketPage *bucket = malloc_meta.fixed_size_buckets[bucketIndex];
   BucketPage *prev = 0;
   do {
-    int index = find_first_unset(bucket->free_bitset);
-    if(index < NUM_ITEMS_IN_BUCKETPAGE(bucket->element_size)) {
-      bucket->free_bitset[index & 0xFF_FF_FF_FF_FF_FF_FF_C0] |= (1 << (index & 0x3f));
-      void *result = bucket->data[bucket->element_size * index];
-      return result;
+    if( bucket->free_bitset[0]
+      & bucket->free_bitset[1]
+      & bucket->free_bitset[2]
+      & bucket->free_bitset[3] != -1ULL) { //check if full
+      int index = find_first_unset(bucket->free_bitset);
+      if(index < NUM_ITEMS_IN_BUCKETPAGE(bucket->element_size)) {
+        bucket->free_bitset[index & ALL_BUT_64] |= (1 << (index & 0x3f));
+        void *result = bucket->data[bucket->element_size * index];
+        return result;
+      }
     }
     prev = bucket;
-  }while(bucket = bucket->next);
+  }while((bucket = bucket->next));
   // no more allocated buckets, get a new bucket and allocate first slot
   bucket = (BucketPage *)malloc_internal(PGSIZE, PGSIZE);
   if(bucket == 0) return 0;
@@ -120,9 +127,16 @@ void setup_malloc() {
       if(bucket == 0) {
         exit(-1); // should never happen
       }
+      bucket->size = (1 << (4+i));
+
       for(int j = 0; j<4; j++)
         bucket->free_bitset[j] = 0;
-      bucket->size = (1 << (4+i));
+      
+      int num_entries = NUM_ITEMS_IN_BUCKETPAGE(bucket->size);
+      for(int i = num_entries; i < 256; i++) {
+        bucket->free_bitset[index & ALL_BUT_64] |= (1 << (index & 0x3f));
+      }
+      
       bucket->next = 0;
       malloc_meta.fixed_size_buckets[i] = bucket;
   }
