@@ -63,10 +63,6 @@ void test_balloc(void) {
 
 void main(int argc, char **argv) {
 
-  printf("Struct sizes: block=%d MallocHeader=%d BucketPage=%d\n",
-  sizeof(struct block),
-  sizeof(struct MallocHeader), sizeof(struct BucketPage));
-
   printf("start alloc, used [%s]\n", (argc > 1) ? "malloc" : "block");
   if(argc > 1)
     test_malloc();

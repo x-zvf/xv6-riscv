@@ -14,6 +14,18 @@ extern "C" {
 #include "kernel/riscv.h"
 
 
+typedef struct Header {
+    struct Header *next;
+    struct Header *prev;
+    uint32_t size;
+} Header;
+
+typedef struct MallocMeta {
+    Header *free_list;
+    Header *allocated_list;
+} MallocMeta;
+
+
 /*!
  * \brief block allocator struct
  * wraps pointer, size and alignment
