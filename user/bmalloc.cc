@@ -86,23 +86,24 @@ static void *allocate_in_bucket(BucketPage *bucket) {
         & bucket->free_bitset[1]
         & bucket->free_bitset[2]
         & bucket->free_bitset[3]) != -1ULL) { //check if not full
-
       uint64_t index = find_first_unset(bucket->free_bitset);
-      if(index < NUM_ITEMS_IN_BUCKETPAGE(bucket->element_size)) {
-        bucket->free_bitset[index & ALL_BUT_64] |= (1 << (index & 0x3f));
-        void *result = &(bucket->data[bucket->element_size * index]);
-        return result;
-      }
+      // if(index < NUM_ITEMS_IN_BUCKETPAGE(bucket->element_size)) {
+      printf("  <M> Bucket has free slot at index %d\n",index);
+      bucket->free_bitset[index & ALL_BUT_64] |= (1 << (index & 0x3f));
+      void *result = &(bucket->data[bucket->element_size * index]);
+      return result;
     }
     prev = bucket;
     bucket = bucket->next;
   };
   // no more allocated buckets, get a new bucket and allocate first slot
+  printf(" <M> No more buckets, allocating new.\n");
   bucket = (BucketPage *)malloc_internal(PGSIZE, PGSIZE);
   if(bucket == 0) return 0;
   
   initialize_bucket(bucket, prev->element_size);
   bucket->free_bitset[0] = 1LL;
+  prev->next = bucket;
   
   return &(bucket->data[0]);
 }
@@ -127,6 +128,7 @@ void *_malloc(uint nbytes) {
     }
     return allocate_in_bucket(bucket);
   }
+  // TODO: make sure, it is never a special page,
   return malloc_internal(nbytes, 16)+sizeof(MallocHeader);
 }
 
@@ -153,10 +155,8 @@ void setup_malloc() {
 }
 
 
+void _free(void *ptr) {
+  // if(ptr == 0) return;
+  // Look at page beginning, is it a special page?
 
-
-
-// void free(void *ptr) {
-//   if(ptr == 0) return;
-
-// }
+}

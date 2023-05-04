@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}",
+                "${workspaceFolder}/user/**",
+                "${workspaceFolder}/kernel/**"
+            ]
+        }
+    ],
+    "version": 4
+}
