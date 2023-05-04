@@ -60,7 +60,8 @@ static void initialize_bucket(struct BucketPage *bucket, uint64_t size) {
 
 static struct MallocMeta malloc_meta;
 
-static struct MallocHeader *malloc_internal(uint nbytes, uint alignment) {
+static struct MallocHeader *freelist_allocate(uint nbytes, uint alignment) {
+  MallocHeader *head, *prev;
   
   return 0;
 }
@@ -98,7 +99,7 @@ static void *allocate_in_bucket(BucketPage *bucket) {
   };
   // no more allocated buckets, get a new bucket and allocate first slot
   printf(" <M> No more buckets, allocating new.\n");
-  bucket = (BucketPage *)malloc_internal(PGSIZE, PGSIZE);
+  bucket = (BucketPage *)freelist_allocate(PGSIZE, PGSIZE);
   if(bucket == 0) return 0;
   
   initialize_bucket(bucket, prev->element_size);
@@ -121,7 +122,7 @@ void *_malloc(uint nbytes) {
     BucketPage *bucket = malloc_meta.fixed_size_buckets[idx];
     if(bucket == 0) {
       printf("  <M> Bucket at index=%d does not exist. allocating\n", idx);
-      bucket = (BucketPage *)malloc_internal(PGSIZE, PGSIZE);
+      bucket = (BucketPage *)freelist_allocate(PGSIZE, PGSIZE);
       if(bucket == 0) return 0;
       initialize_bucket(bucket, nbytes);
       malloc_meta.fixed_size_buckets[idx] = bucket;
@@ -129,7 +130,7 @@ void *_malloc(uint nbytes) {
     return allocate_in_bucket(bucket);
   }
   // TODO: make sure, it is never a special page,
-  return malloc_internal(nbytes, 16)+sizeof(MallocHeader);
+  return freelist_allocate(nbytes, 16)+sizeof(MallocHeader);
 }
 
 
