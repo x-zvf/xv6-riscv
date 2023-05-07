@@ -36,5 +36,6 @@ entry("getpid");
 entry("sbrk");
 entry("sleep");
 entry("uptime");
-entry("shutdown");
 entry("cxx");
+entry("term");
+

@@ -83,11 +83,3 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
-
-uint64
-sys_shutdown(void)
-{
-  printf("Terminating system\n");
-  timerhalt();
-  return 0;
-}

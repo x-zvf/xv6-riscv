@@ -28,10 +28,9 @@ void setup_malloc() {
 void test_malloc(void) {
   setup_malloc();
   {
-    int *foo = malloc(20);
+    int *foo = static_cast<int*>(malloc(20));
     if(foo) {
-      int sum = foo[0] + foo[1];
-      (void) sum;
+      [[maybe_unused]] int sum = foo[0] + foo[1];
       memset(foo, 0, 20);
     }
     free(foo);
@@ -46,19 +45,17 @@ void test_malloc(void) {
 void test_balloc(void) {
   setup_balloc();
   {
-    block foo = block_alloc(20, _Alignof(int));
+    auto foo = block_alloc_typed<int>(20 / sizeof(int));
     if(foo.begin) {
-      int *bar = foo.begin;
-      int sum = bar[0] + bar[1];
-      (void) sum;
+      [[maybe_unused]] int sum = foo.begin[0] + foo.begin[1];
       memset(foo.begin, 0, 20);
     }
-    block_free(foo);
+    block_free(foo.untyped());
   }
   {
     block foo = BALLOC(int, 5);
     if(foo.begin) {
-      int *bar = foo.begin;
+      int *bar = static_cast<int*>(foo.begin);
       int sum = bar[0] + bar[1];
       (void) sum;
       memset(foo.begin, 0, 20);
@@ -66,8 +63,8 @@ void test_balloc(void) {
     block_free(foo);
   }
   {
-    block foo = block_alloc(0, 1);
-    block_free(foo);
+    auto foo = block_alloc_typed<char>(0);
+    block_free(foo.untyped());
   }
 }
 

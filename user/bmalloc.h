@@ -11,21 +11,6 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "kernel/riscv.h"
-
-
-typedef struct Header {
-    struct Header *next;
-    struct Header *prev;
-    uint32_t size;
-} Header;
-
-typedef struct MallocMeta {
-    Header *free_list;
-    Header *allocated_list;
-} MallocMeta;
-
-
 /*!
  * \brief block allocator struct
  * wraps pointer, size and alignment
@@ -37,7 +22,11 @@ struct block {
 };
 typedef struct block block;
 
+#ifndef __cplusplus
+#define BALLOC(T,N) block_alloc(sizeof(T)*(N), _Alignof(T))
+#else
 #define BALLOC(T,N) block_alloc(sizeof(T)*(N), alignof(T))
+#endif
 
 block block_alloc(uint32_t size, uint32_t align);
 
@@ -58,17 +47,20 @@ struct typed_block {
     T *begin;
     uint32_t size;
     uint32_t align;
+    explicit operator block() {
+        return {static_cast<void*>(begin), size, align};
+    }
+    auto untyped() {
+        return static_cast<block>(*this);
+    }
+    static typed_block make_typed(block b) {
+        return {static_cast<T*>(b.begin), b.size, b.align};
+    }
 };
 
 template<typename T>
-union typed_block_u {
-    block untyped;
-    typed_block<T> typed;
-};
-
-template<typename T>
-inline typed_block_u<T> block_alloc_typed(uint32_t num_elements) {
-    return {block_alloc(num_elements * sizeof(T), alignof(T))};
+inline typed_block<T> block_alloc_typed(uint32_t num_elements) {
+    return typed_block<T>::make_typed(block_alloc(num_elements * sizeof(T), alignof(T)));
 };
 
 #endif

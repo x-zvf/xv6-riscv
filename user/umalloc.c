@@ -3,8 +3,6 @@
 // Memory allocator by Kernighan and Ritchie,
 // The C programming Language, 2nd ed.  Section 8.7.
 
-#if 0
-
 typedef long Align;
 
 union header {
@@ -87,5 +85,3 @@ malloc(uint nbytes)
         return 0;
   }
 }
-
-#endif
