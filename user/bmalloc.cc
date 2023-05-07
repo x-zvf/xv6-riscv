@@ -19,7 +19,7 @@ static uint32_t clz(uint32_t x) { //__builtin_clz does not link, grrrr.
   if(x == 0)
     return 32; */
   uint32_t res = 0;
-  while((1U << (31 - res)) >= x)
+  while((1ULL << (31 - res)) > (uint64_t)x)
     res++;
   return res;
 }
@@ -337,9 +337,8 @@ block block_alloc(uint32_t size, uint32_t align) {
 #endif
     return {0, 0, 0};
   }
-  // TODO: fix align and size reporting
   if(size >= PGSIZE) {
-    return {_malloc_large(size), ROUND_UP_TO_PAGE_SIZE(size), 4096};
+    return {_malloc_large(size), ROUND_UP_TO_PAGE_SIZE(size), PGSIZE};
   }
   if(align <= size)
     return {malloc(size), size, size};
