@@ -191,6 +191,28 @@ static void *allocate_top_level_block()
   return new_break;
 }
 
+void *_buddy_malloc_split_or_allocate(uint32_t order, uint32_t start_search_order)
+{
+  void *ret;
+
+  for(uint64_t i = start_search_order; i < BUDDY_MAX_ORDER; i++) {
+    ret = free_list_pop(i);
+    if(ret != 0) {
+#if DEBUG_MALLOC
+      printf("found free block %p (of order %d) in free list, splitting\n", ret, i);
+#endif
+      ret = split_and_allocate_in_block(ret, i, order);
+      return ret;
+    }
+  }
+#if DEBUG_MALLOC
+  printf("no free blocks found, allocating new top level block\n");
+#endif
+  void *new_block = allocate_top_level_block();
+  if(new_block == 0)
+    return 0;
+  return split_and_allocate_in_block(new_block, BUDDY_MAX_ORDER, order);
+}
 void *_buddy_malloc(uint32_t order)
 {
   if(order < BUDDY_MIN_ORDER)
@@ -209,24 +231,33 @@ void *_buddy_malloc(uint32_t order)
     mark_block(pm, ret, order, 1);
     return ret;
   }
-  
-  for(uint64_t i = order + 1; i < BUDDY_MAX_ORDER; i++) {
-    ret = free_list_pop(i);
-    if(ret != 0) {
+  return _buddy_malloc_split_or_allocate(order, order + 1);
+}
+
+void *_buddy_highalign_malloc(uint32_t order, uint32_t alignment_order)
+{
+  if(order < BUDDY_MIN_ORDER)
+    order = BUDDY_MIN_ORDER;
 #if DEBUG_MALLOC
-      printf("found free block %p (of order %d) in free list, splitting\n", ret, i);
+  printf("buddy allocating 2**%d bytes with high alignment 2**%d\n", order, alignment_order);
 #endif
-      ret = split_and_allocate_in_block(ret, i, order);
-      return ret;
-    }
+  void *ret = metadata.free_lists[FREELIST_INDEX(order)];
+  void *prev;
+  while(ret != 0 || ((uint64_t)ret % (1 << alignment_order) != 0)) {
+    prev = ret;
+    ret = *(void**)ret;
   }
+  if(ret != 0) {
 #if DEBUG_MALLOC
-  printf("no free blocks found, allocating new top level block\n");
+    printf("found free block %p (of exact order %d) with correct alignment in free list\n", ret, order);
 #endif
-  void *new_block = allocate_top_level_block();
-  if(new_block == 0)
-    return 0;
-  return split_and_allocate_in_block(new_block, BUDDY_MAX_ORDER, order);
+    struct buddy_page_metadata *pm = find_page_metadata(ret);
+    mark_block(pm, ret, order, 1);
+
+    *(void **)prev = *(void **)ret;
+    return ret;
+  }
+  return _buddy_malloc_split_or_allocate(order, alignment_order);
 }
 
 static void *_malloc_large(uint32_t size)
@@ -251,7 +282,7 @@ printf("FATAL: free large not implemented\n");
 exit(-1);
 }
 
-void _free_buddy(void *ptr)
+void _buddy_free(void *ptr)
 {
   struct buddy_page_metadata *pm = find_page_metadata(ptr);
     for(int order = BUDDY_MIN_ORDER; order <= BUDDY_MAX_ORDER; order++) {
@@ -288,7 +319,7 @@ void _free(void *ptr)
   if((uint64_t)ptr >= MAX_MEM)
     _free_large(ptr);
   else
-    _free_buddy(ptr);
+    _buddy_free(ptr);
 }
 
 int bmalloc_enable_printing = 1;
@@ -296,7 +327,25 @@ int bmalloc_enable_printing = 1;
 block block_alloc(uint32_t size, uint32_t align) {
   if(bmalloc_enable_printing)
     printf("block_alloc default called\n");
-  return {malloc(size), size, align};
+  
+  if(size == 0)
+    return {0, 0, 0};
+  
+  if(align > PGSIZE) {
+#if DEBUG_MALLOC
+    printf("NOT SUPPORTED: align %d > PGSIZE %d, returning 0\n", align, PGSIZE);
+#endif
+    return {0, 0, 0};
+  }
+  // TODO: fix align and size reporting
+  if(size >= PGSIZE) {
+    return {_malloc_large(size), ROUND_UP_TO_PAGE_SIZE(size), 4096};
+  }
+  if(align <= size)
+    return {malloc(size), size, size};
+  uint32_t order = ord_of_next_power_of_two(size);
+  uint32_t alignment_order = ord_of_next_power_of_two(align);
+  return {_buddy_highalign_malloc(order, alignment_order), size, (1U << alignment_order)};
 }
 
 void block_free(block block) {
@@ -307,6 +356,7 @@ void block_free(block block) {
 void setup_balloc() {
   if(bmalloc_enable_printing)
     printf("setup_balloc default called\n");
+  setup_malloc();
 }
 
 void setup_malloc() {
