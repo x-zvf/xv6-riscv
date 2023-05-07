@@ -271,7 +271,7 @@ void *_malloc(uint32_t size)
 {
   if(size == 0)
     return 0;
-  if(size > 1024)
+  if(size >= PGSIZE)
     return _malloc_large(size);
   return _buddy_malloc(ord_of_next_power_of_two(size));
 }
