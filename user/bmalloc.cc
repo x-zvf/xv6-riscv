@@ -34,9 +34,10 @@ static uint32_t ord_of_next_power_of_two(uint32_t x) {
 
 static struct buddy_mappings_segment *allocate_metadata_until_next_power_of_two()
 {
-  uint64_t nbytes = ROUND_UP_TO_PAGE_SIZE(sizeof(struct buddy_mappings_segment) + (uint64_t)metadata.end_of_sbrk_segment);
+  uint64_t nbytes = ROUND_UP_TO_PAGE_SIZE(sizeof(struct buddy_mappings_segment) + (uint64_t)metadata.end_of_sbrk_segment) - (uint64_t)metadata.end_of_sbrk_segment;
   char *new_break = sbrk(nbytes);
 #if DEBUG_MALLOC
+  printf("allocated %d bytes of metadata at %p\n", nbytes, new_break);
   if((uint64_t) new_break % PGSIZE != 0) {
     printf("FATAL: sbrk returned an address that is not page aligned");
     exit(-1);
