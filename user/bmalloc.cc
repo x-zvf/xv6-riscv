@@ -270,7 +270,7 @@ static void *_malloc_large(uint32_t size)
   return 0;
 }
 
-void *_malloc(uint32_t size)
+void *malloc(uint32_t size)
 {
   if(size == 0)
     return 0;
@@ -322,7 +322,7 @@ void _buddy_free(void *ptr)
   }
 }
 
-void _free(void *ptr)
+void free(void *ptr)
 {
   if(ptr == 0)
     return;

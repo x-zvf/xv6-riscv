@@ -95,13 +95,19 @@ sys_mmap(void) {
   argint(4, &fildes);
   argint(5, &off);
 
-  if(addr != 0 || fildes != -1 || off != 0) {
+  if(addr != 0 || fildes != -1 || off != 0 
+  || flags != (MAP_ANONYMOUS | MAP_PRIVATE)
+  || prot != (PROT_READ | PROT_WRITE)) {
     printf("[K] sys_mmap: unsupported parameter(s)\n");
     return -1;
   }
-  
-  printf("[K] sys_mmap: mapping length %d with flags %X and prot %X\n", len, flags, prot);
-  return 0;
+  printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
+
+  uint64 npages = PGROUNDUP(len) / PGSIZE;
+  struct proc *p = myproc();
+  uint64 ret_addr = uvmmap(p->pagetable, npages, prot);
+  printf("[K] sys_mmap: ret_addr=%p npages=\n", addr, npages);
+  return ret_addr;
 }
 
 uint64
@@ -111,5 +117,16 @@ sys_munmap(void) {
   argaddr(0, &addr);
   argint(1, &len);
   printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
+  if(addr % PGSIZE != 0 || len % PGSIZE != 0) {
+    printf("[K] sys_munmap: addr or len not page aligned\n");
+    return -1;
+  }
+  // TODO:
+  struct proc *p = myproc();
+  if(walkaddr(p->pagetable, addr) == 0) {
+    printf("[K] sys_munmap: addr not mapped\n");
+    return 0;
+  }
+  uvmunmap(myproc()->pagetable, addr, len, 1);
   return 0;
 }

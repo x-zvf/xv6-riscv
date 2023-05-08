@@ -375,7 +375,15 @@ typedef uint64 *pagetable_t; // 512 PTEs
 // that have the high bit set.
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 
+#define MMAP_BASE (1 << 28)
+#define MAP_SHARED 1
+#define MAP_PRIVATE 2
+#define MAP_ANONYMOUS 0x4
+#define MAP_POPULATE 0x8
 
+#define PROT_READ        0x2
+#define PROT_WRITE        0x3
+#define PROT_EXEC        0x8 
 
 #ifdef __cplusplus
 }

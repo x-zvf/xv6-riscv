@@ -81,8 +81,8 @@ struct malloc_metadata {
 void *_malloc(uint32_t size);
 void _free(void *ptr);
 
-#define malloc _malloc
-#define free _free
+// #define malloc _malloc
+// #define free _free
 
 block block_alloc(uint32_t size, uint32_t align);
 

@@ -9,7 +9,9 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include "kernel/stat.h"
+#include "kernel/riscv.h"
 
 
 // system calls

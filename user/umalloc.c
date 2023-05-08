@@ -2,7 +2,7 @@
 
 // Memory allocator by Kernighan and Ritchie,
 // The C programming Language, 2nd ed.  Section 8.7.
-
+#if 0
 typedef long Align;
 
 union header {
@@ -17,6 +17,7 @@ typedef union header Header;
 
 static Header base;
 static Header *freep;
+
 
 void
 free(void *ap)
@@ -85,3 +86,4 @@ malloc(uint nbytes)
         return 0;
   }
 }
+#endif

@@ -243,10 +243,38 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
   return newsz;
 }
 
-// uint64
-// uvmmap(pagetable_t pagetable, uint64 npages, int perm)
-// {
-// }
+uint64
+uvmmap(pagetable_t pagetable, uint64 npages, int perm)
+{
+  uint64 map_at = myproc()->mmapped_to;
+  if(map_at + npages*PGSIZE > MAXVA)
+  {
+    panic("uvmmap: out of virtual memory. Reclaiming free'd VA is not implemented.\n");
+    return 0;
+  }
+  int clean_perm = PTE_U 
+            | ((perm & PROT_READ) ? PTE_R : 0) 
+            | ((perm & PROT_WRITE) ? PTE_W : 0) 
+            | ((perm & PROT_EXEC) ? PTE_X : 0);
+  
+  for(int i = 0; i < npages; i++)
+  {
+    char *mem = kalloc();
+    if(mem == 0)
+    {
+      uvmunmap(pagetable, map_at, i, 1);
+      return 0;
+    }
+    if(mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64)mem, clean_perm) != 0)
+    {
+      uvmunmap(pagetable, map_at, i, 1);
+      kfree(mem);
+      return 0;
+    }
+  }
+  myproc()->mmapped_to += npages*PGSIZE;
+  return map_at;
+}
 
 // Deallocate user pages to bring the process size from oldsz to
 // newsz.  oldsz and newsz need not be page-aligned, nor does newsz
