@@ -75,7 +75,7 @@ static struct buddy_page_metadata *find_page_metadata(void *blockptr)
   void *page_base = PAGE_BASE(blockptr);
   struct buddy_mappings_segment *segment = metadata.first_metadata_segment;
   while(segment != 0) {
-    if(page_base < segment->min_address_mapped || page_base >= segment->max_address_mapped) {
+    if(page_base >= segment->max_address_mapped) {
       segment = segment->next_segment;
       continue;
     }
@@ -214,6 +214,8 @@ void *_buddy_malloc_split_or_allocate(uint32_t order, uint32_t start_search_orde
     return 0;
   return split_and_allocate_in_block(new_block, BUDDY_MAX_ORDER, order);
 }
+
+
 void *_buddy_malloc(uint32_t order)
 {
   if(order < BUDDY_MIN_ORDER)
@@ -294,20 +296,27 @@ void _buddy_free(void *ptr)
         continue;
       }
       mark_block(pm, ptr, order, 0);
-      char *buddy_ptr = (char *)ptr + (((uint64_t)PAGE_OFFSET(ptr) >> order) % 2 == 0 ?  (1 << order) : -(1 << order));
+      int is_left_buddy = ((uint64_t)PAGE_OFFSET(ptr) >> order) % 2 == 0;
+      char *buddy_ptr = (char *)ptr + (is_left_buddy ?  (1 << order) : -(1 << order));
+  
   #if DEBUG_MALLOC
       printf("freeing block %p (order %d), buddy is %p\n", ptr, order, buddy_ptr);
   #endif
+
       if(is_block_marked(pm, buddy_ptr, order)) {
+  
   #if DEBUG_MALLOC
         printf("buddy is marked, can not coalesce; adding ptr to freelist\n");
   #endif
+  
         free_list_push(order, ptr);
       } else {
+  
   #if DEBUG_MALLOC
         printf("buddy is not marked, coalescing\n");
-        free_list_push(order + 1, ptr);
   #endif
+        free_list_push(order + 1, is_left_buddy ? ptr : buddy_ptr);
+  
       }
       break;
   }

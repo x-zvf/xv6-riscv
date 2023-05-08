@@ -25,10 +25,24 @@ typedef struct block block;
 
 #define MAX_MEM 1024*1024*128U // 128 MB
 
-#define DEBUG_MALLOC 1
+#define DEBUG_MALLOC 0
 
 #define BUDDY_MIN_ORDER 3 // we allocate at least 8 bytes
 #define BUDDY_MAX_ORDER 12 // we allocate at most 4096 bytes (a page)
+
+/*
+ 0
+ 1 2
+ 3 4 5 6
+ 7 8 9 A B C D E
+
+ 0
+ 0       0
+ 0   0   0   0
+ 0 0 0 0 0 0 0 0
+*/
+
+// 8 = 2**3 ==> order
 
 struct buddy_page_metadata {
     void *address; // the address of the page, for which this mapping applies.
