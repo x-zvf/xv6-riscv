@@ -83,3 +83,33 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_mmap(void) {
+  uint64 addr;
+  int len, prot, flags, fildes, off;
+  argaddr(0, &addr);
+  argint(1, &len);
+  argint(2, &prot);
+  argint(3, &flags);
+  argint(4, &fildes);
+  argint(5, &off);
+
+  if(addr != 0 || fildes != -1 || off != 0) {
+    printf("[K] sys_mmap: unsupported parameter(s)\n");
+    return -1;
+  }
+  
+  printf("[K] sys_mmap: mapping length %d with flags %X and prot %X\n", len, flags, prot);
+  return 0;
+}
+
+uint64
+sys_munmap(void) {
+  uint64 addr;
+  int len;
+  argaddr(0, &addr);
+  argint(1, &len);
+  printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
+  return 0;
+}
