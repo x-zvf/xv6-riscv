@@ -1,6 +1,7 @@
 /*!
  * \file
- * \brief test general mmap
+ * \brief test that mmap zeroes the page
+ * \attention optional test case
  */
 
 
@@ -13,10 +14,8 @@ void main() {
 		void *data = mmap(0, i * size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 		assert(data != MAP_FAILED);
 		auto ptr = reinterpret_cast<volatile char*>(data);
-		for (int j = 0; j < size; ++j) {
-			ptr[j] = j;
-			assert(ptr[j] == char(j));
-		}
+		for (int j = 0; j < size; ++j)
+			assert(!ptr[j]);
 		assert(!munmap(data, size));
 	}
 }

@@ -38,6 +38,9 @@ entry("sleep");
 entry("uptime");
 entry("cxx");
 entry("term");
+<<<<<<< HEAD
 entry("mmap");
 entry("munmap");
+=======
+>>>>>>> rxv6pp-upstream/riscv
 

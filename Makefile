@@ -106,7 +106,7 @@ $U/initcode: $U/initcode.S
 tags: $(OBJS) _init
 	etags *.S *.c
 
-ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o $U/bmalloc.o
+ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o $U/bmalloc.o $U/mmap-mock.o
 
 _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $^
@@ -159,14 +159,15 @@ UPROGS=\
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
 
--include kernel/*.d user/*.d
+-include kernel/*.d user/*.d ct-test/*.d rt-test/*.d
 
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
 	$U/initcode $U/initcode.out $K/kernel fs.img rt-test.img rt-bench.img \
 	mkfs/mkfs .gdbinit \
-        $U/usys.S \
+	$U/usys.S \
+	$(RUNTIMETESTFOLDER)/_* $(BENCHMARKFOLDER)/_* \
 	$(UPROGS)
 
 # try to generate a unique GDB port
@@ -226,3 +227,12 @@ rt-bench.img: mkfs/mkfs $(BENCHMARKBIN)
 rt-bench: $K/kernel rt-bench.img
 	$(QEMU) $(QEMUOPTS) $(subst fs.img,rt-bench.img,$(QEMUOPTS.drive))
 
+
+
+test : ct-test rt-test
+
+bench: rt-bench
+
+eval: test bench
+
+all: fs.img eval

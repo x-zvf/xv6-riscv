@@ -14,6 +14,9 @@ extern "C" {
 #include "kernel/riscv.h"
 
 
+#define NULL ((void*)0)
+
+
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -38,6 +41,7 @@ int sleep(int);
 int uptime(void);
 void cxx(int);
 void term();
+
 char *mmap(char *, int len, int prot, int flags, int fildes, int off);
 int munmap(char *, int len);
 // ulib.c
