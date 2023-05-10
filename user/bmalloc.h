@@ -46,7 +46,10 @@ typedef struct block block;
 
 struct buddy_page_metadata {
     void *address; // the address of the page, for which this mapping applies.
-    uint64_t in_use_bitset[16];
+    union {
+        uint64_t in_use_bitset[16];
+        uint64_t mmap_npages;
+    };
 };
 
 struct buddy_mappings_segment {

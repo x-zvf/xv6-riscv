@@ -1,5 +1,6 @@
 #include "user/bmalloc.h"
 #include "user/user.h"
+#include "user/mmap.h"
 
 extern "C" {
   
@@ -47,7 +48,7 @@ static struct buddy_mappings_segment *allocate_metadata_until_next_power_of_two(
   struct buddy_mappings_segment *new_segment = (struct buddy_mappings_segment *)new_break;
   new_segment->next_segment = 0;
   new_segment->min_address_mapped = metadata.end_of_sbrk_segment;
-  new_segment->max_address_mapped = (char *)0 + MAX_MEM;
+  new_segment->max_address_mapped = (void *)-1;
   new_segment->mappings_populated = 0;
   new_segment->mappings_capacity = (nbytes - sizeof(struct buddy_mappings_segment)) / sizeof(struct buddy_page_metadata);
 
@@ -138,10 +139,8 @@ static void *split_and_allocate_in_block(void *blockptr, uint64_t block_order_si
   return blockptr;
 }
 
-
-static void *allocate_top_level_block()
+static struct buddy_mappings_segment *get_or_allocate_metadata_segment()
 {
-// allocate Metadata
   struct buddy_mappings_segment *segment = metadata.last_metadata_segment;
   if(segment == 0) {
     segment = allocate_metadata_until_next_power_of_two();
@@ -158,6 +157,14 @@ static void *allocate_top_level_block()
     segment->min_address_mapped = metadata.end_of_sbrk_segment;
     metadata.last_metadata_segment = segment;
   }
+  return segment;
+}
+
+static void *allocate_top_level_block()
+{
+// allocate Metadata
+
+  struct buddy_mappings_segment *segment = get_or_allocate_metadata_segment();
 
   uint64_t bytes_to_allocate = 1ULL << BUDDY_MAX_ORDER;
 
@@ -265,9 +272,25 @@ void *_buddy_highalign_malloc(uint32_t order, uint32_t alignment_order)
 
 static void *_malloc_large(uint32_t size)
 { 
-  printf("FATAL: malloc large not implemented\n");
-  exit(-1);
-  return 0;
+  uint64 npages = PGROUNDUP(size) / PGSIZE;
+  void *mem = mmap(0, npages * PGSIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+  if(mem == 0)
+    return 0;
+  
+  struct buddy_mappings_segment *segment = get_or_allocate_metadata_segment();
+  if(segment == 0) {
+    munmap(mem, npages * PGSIZE);
+    return 0;
+  }
+  segment->mappings[segment->mappings_populated].address = mem;
+  segment->mappings[segment->mappings_populated].mmap_npages = npages;
+  segment->mappings_populated++;
+
+  char *maxmem = (char *)mem + npages * PGSIZE;
+  if(segment->max_address_mapped == (void *)-1 || segment->max_address_mapped < maxmem) {
+    segment->max_address_mapped = maxmem;
+  }
+  return mem;
 }
 
 void *malloc(uint32_t size)
@@ -281,9 +304,14 @@ void *malloc(uint32_t size)
 
 void _free_large(void *ptr)
 {
-printf("FATAL: free large not implemented\n");
-exit(-1);
+  struct buddy_page_metadata *pm = find_page_metadata(ptr);
+  if(pm == 0) {
+    printf("     DID NOT FIND PM FOR %p\n", ptr);
+    return;
+  }
+  munmap(pm->address, pm->mmap_npages * PGSIZE);
 }
+
 
 void _buddy_free(void *ptr)
 {
@@ -332,7 +360,7 @@ void free(void *ptr)
     _buddy_free(ptr);
 }
 
-int bmalloc_enable_printing = 1;
+int bmalloc_enable_printing = 0;
 
 block block_alloc(uint32_t size, uint32_t align) {
   if(bmalloc_enable_printing)

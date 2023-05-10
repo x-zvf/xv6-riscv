@@ -96,7 +96,7 @@ sys_mmap(void) {
   argint(4, &fildes);
   argint(5, &off);
 
-  if(addr != 0 || fildes != -1 || off != 0 
+  if(addr != 0 || len == 0 || fildes != -1 || off != 0 
   || flags != (MAP_ANONYMOUS | MAP_PRIVATE)
   || prot != (PROT_READ | PROT_WRITE)) {
     printf("[K] sys_mmap: unsupported parameter(s)\n");

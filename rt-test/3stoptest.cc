@@ -22,6 +22,6 @@
 // }
 
 void main() {
-    printf("goodbye");
-    term();
+    //printf("goodbye");
+    //term();
 }
