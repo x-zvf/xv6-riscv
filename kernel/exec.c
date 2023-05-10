@@ -120,13 +120,13 @@ exec(char *path, char **argv)
   p->sz = sz;
   p->trapframe->epc = elf.entry;  // initial program counter = main
   p->trapframe->sp = sp; // initial stack pointer
-  proc_freepagetable(oldpagetable, oldsz, p->mmapped_to);
+  proc_freepagetable(oldpagetable, oldsz);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable, sz, MMAP_BASE);
+    proc_freepagetable(pagetable, sz);
   if(ip){
     iunlockput(ip);
     end_op();

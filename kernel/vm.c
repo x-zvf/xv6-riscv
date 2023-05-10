@@ -246,12 +246,25 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
 uint64
 uvmmap(pagetable_t pagetable, uint64 npages, int perm)
 {
-  uint64 map_at = myproc()->mmapped_to;
-  if(map_at + npages*PGSIZE > MAXVA)
+  uint64 map_at = MMAP_BASE;
+  for(; map_at < MAXVA; map_at += PGSIZE)
   {
-    panic("uvmmap: out of virtual memory. Reclaiming free'd VA is not implemented.\n");
+    int free = 1;
+    for(uint64 i = 0; i < npages; i++) {
+      if (walk(pagetable, map_at + i*PGSIZE, 0) != 0) {
+        free = 0;
+        break;
+      }
+    }
+    if(free)
+      break;
+  }
+  if(map_at + npages * PGSIZE >= MAXVA)
+  {
+    printf("uvmmap: out of virtual memory\n");
     return 0;
   }
+  printf("[K] uvmmap: mapping %d pages at %p\n", npages, map_at);
   int clean_perm = PTE_U 
             | ((perm & PROT_READ) ? PTE_R : 0) 
             | ((perm & PROT_WRITE) ? PTE_W : 0) 
@@ -265,14 +278,16 @@ uvmmap(pagetable_t pagetable, uint64 npages, int perm)
       uvmunmap(pagetable, map_at, i, 1);
       return 0;
     }
+    printf("[K] mapping page %d at %p\n", i, map_at + i*PGSIZE);
     if(mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64)mem, clean_perm) != 0)
     {
+      printf("uvmmap: mappages failed\n");
       uvmunmap(pagetable, map_at, i, 1);
       kfree(mem);
       return 0;
     }
   }
-  myproc()->mmapped_to += npages*PGSIZE;
+  printf("[K] uvmmap: mapped %d pages at %p\n", npages, map_at);
   return map_at;
 }
 

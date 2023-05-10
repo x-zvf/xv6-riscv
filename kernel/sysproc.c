@@ -106,7 +106,7 @@ sys_mmap(void) {
   uint64 npages = PGROUNDUP(len) / PGSIZE;
   struct proc *p = myproc();
   uint64 ret_addr = uvmmap(p->pagetable, npages, prot);
-  printf("[K] sys_mmap: ret_addr=%p npages=\n", addr, npages);
+  printf("[K] sys_mmap: ret_addr=%p npages=%d\n", ret_addr, npages);
   return ret_addr;
 }
 
@@ -127,6 +127,8 @@ sys_munmap(void) {
     printf("[K] sys_munmap: addr not mapped\n");
     return 0;
   }
+  printf("[K] sys_munmap: unmapping addr=%p len=%d\n", addr, len);
   uvmunmap(myproc()->pagetable, addr, len, 1);
+  printf("[K] sys_munmap: unmapped addr=%p len=%d\n", addr, len);
   return 0;
 }
