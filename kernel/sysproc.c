@@ -121,14 +121,18 @@ sys_munmap(void) {
     printf("[K] sys_munmap: addr or len not page aligned\n");
     return -1;
   }
+  uint64 npages = len / PGSIZE;
+  printf("[K] sys_munmap: len=%d npages=%d\n", len, npages);
   // TODO:
   struct proc *p = myproc();
-  if(walkaddr(p->pagetable, addr) == 0) {
-    printf("[K] sys_munmap: addr not mapped\n");
-    return 0;
+  for(int i = 0; i < npages; i++) {
+    if(walkaddr(p->pagetable, addr + i * PGSIZE) == 0) {
+      printf("[K] sys_munmap: addr=%p (page %n) not mapped\n", addr, i);
+      return 0;
+    }
   }
-  printf("[K] sys_munmap: unmapping addr=%p len=%d\n", addr, len);
-  uvmunmap(myproc()->pagetable, addr, len, 1);
-  printf("[K] sys_munmap: unmapped addr=%p len=%d\n", addr, len);
+  printf("[K] sys_munmap: unmapping addr=%p pages=%d\n", addr, npages);
+  uvmunmap(myproc()->pagetable, addr, npages, 1);
+  printf("[K] sys_munmap: unmapped addr=%p npages=%d\n", addr, npages);
   return 0;
 }
