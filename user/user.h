@@ -42,8 +42,8 @@ int uptime(void);
 void cxx(int);
 void term();
 
-char *mmap(char *, int len, int prot, int flags, int fildes, int off);
-int munmap(char *, int len);
+// char *mmap(char *, int len, int prot, int flags, int fildes, int off);
+// int munmap(char *, int len);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

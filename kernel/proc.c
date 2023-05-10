@@ -1,5 +1,6 @@
 #include "memlayout.h"
 #include "defs.h"
+#include "mmap.h"
 
 struct cpu cpus[NCPU];
 

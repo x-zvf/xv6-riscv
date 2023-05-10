@@ -1,4 +1,5 @@
 #include "defs.h"
+#include "mmap.h"
 
 uint64
 sys_exit(void)

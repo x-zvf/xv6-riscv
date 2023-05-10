@@ -34,6 +34,8 @@ extern "C" {
 #define SYS_close  21
 #define SYS_cxx    100
 #define SYS_term   101
+#define SYS_mmap   110
+#define SYS_munmap 111
 
 
 
