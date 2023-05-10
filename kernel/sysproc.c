@@ -102,12 +102,13 @@ sys_mmap(void) {
     printf("[K] sys_mmap: unsupported parameter(s)\n");
     return -1;
   }
-  printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
+  // printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
 
   uint64 npages = PGROUNDUP(len) / PGSIZE;
   struct proc *p = myproc();
   uint64 ret_addr = uvmmap(p->pagetable, npages, prot);
-  printf("[K] sys_mmap: ret_addr=%p npages=%d\n", ret_addr, npages);
+  p->max_mmaped = ret_addr + npages * PGSIZE > p->max_mmaped ? ret_addr + npages * PGSIZE : p->max_mmaped;
+  // printf("[K] sys_mmap: ret_addr=%p npages=%d\n", ret_addr, npages);
   return ret_addr;
 }
 
@@ -117,13 +118,13 @@ sys_munmap(void) {
   int len;
   argaddr(0, &addr);
   argint(1, &len);
-  printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
+  // printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
   if(addr % PGSIZE != 0 || len % PGSIZE != 0) {
     printf("[K] sys_munmap: addr or len not page aligned\n");
     return -1;
   }
   uint64 npages = len / PGSIZE;
-  printf("[K] sys_munmap: len=%d npages=%d\n", len, npages);
+  // printf("[K] sys_munmap: len=%d npages=%d\n", len, npages);
   // TODO:
   struct proc *p = myproc();
   for(int i = 0; i < npages; i++) {
@@ -132,8 +133,8 @@ sys_munmap(void) {
       return 0;
     }
   }
-  printf("[K] sys_munmap: unmapping addr=%p pages=%d\n", addr, npages);
+  // printf("[K] sys_munmap: unmapping addr=%p pages=%d\n", addr, npages);
   uvmunmap(myproc()->pagetable, addr, npages, 1);
-  printf("[K] sys_munmap: unmapped addr=%p npages=%d\n", addr, npages);
+  // printf("[K] sys_munmap: unmapped addr=%p npages=%d\n", addr, npages);
   return 0;
 }

@@ -168,7 +168,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 {
   uint64 a;
   pte_t *pte;
-  printf("uvmunmap: va = %p, npages = %d\n", va, npages);
+  // printf("uvmunmap: va = %p, npages = %d\n", va, npages);
 
   if((va % PGSIZE) != 0)
     panic("uvmunmap: not aligned");
@@ -261,12 +261,13 @@ uvmmap(pagetable_t pagetable, uint64 npages, int perm)
     if(free)
       break;
   }
-  if(map_at + npages * PGSIZE >= MAXVA)
+  uint64 top_addr = map_at + npages * PGSIZE;
+  if(top_addr >= MAXVA)
   {
     printf("uvmmap: out of virtual memory\n");
     return 0;
   }
-  printf("[K] uvmmap: mapping %d pages at %p\n", npages, map_at);
+  // printf("[K] uvmmap: mapping %d pages at %p\n", npages, map_at);
   int clean_perm = PTE_U 
             | ((perm & PROT_READ) ? PTE_R : 0) 
             | ((perm & PROT_WRITE) ? PTE_W : 0) 
@@ -280,7 +281,7 @@ uvmmap(pagetable_t pagetable, uint64 npages, int perm)
       uvmunmap(pagetable, map_at, i, 1);
       return 0;
     }
-    printf("[K] mapping page %d at %p\n", i, map_at + i*PGSIZE);
+    // printf("[K] mapping page %d at %p\n", i, map_at + i*PGSIZE);
     if(mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64)mem, clean_perm) != 0)
     {
       printf("uvmmap: mappages failed\n");
@@ -289,7 +290,7 @@ uvmmap(pagetable_t pagetable, uint64 npages, int perm)
       return 0;
     }
   }
-  printf("[K] uvmmap: mapped %d pages at %p\n", npages, map_at);
+  // printf("[K] uvmmap: mapped %d pages at %p\n", npages, map_at);
   return map_at;
 }
 
