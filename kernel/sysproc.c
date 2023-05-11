@@ -96,17 +96,27 @@ sys_mmap(void) {
   argint(4, &fildes);
   argint(5, &off);
 
-  if(addr != 0 || len == 0 || fildes != -1 || off != 0 
-  || flags != (MAP_ANONYMOUS | MAP_PRIVATE)
+  if(len == 0 || fildes != -1 || off != 0 
+  || (flags | MAP_FIXED) != (MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED)
   || prot != (PROT_READ | PROT_WRITE)) {
     printf("[K] sys_mmap: unsupported parameter(s)\n");
+    return -1;
+  }
+  if(addr % PGSIZE != 0) {
+    printf("[K] sys_mmap: addr not page aligned\n");
+    return -1;
+  }
+  if(flags & MAP_FIXED && addr < MMAP_BASE) {
+    printf("[K] sys_mmap: MAP_FIXED: invalid address\n");
     return -1;
   }
   // printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
 
   uint64 npages = PGROUNDUP(len) / PGSIZE;
   struct proc *p = myproc();
-  uint64 ret_addr = uvmmap(p->pagetable, npages, prot);
+
+  uint64 start_va = addr > MMAP_BASE ? addr : MMAP_BASE;
+  uint64 ret_addr = uvmmap(p->pagetable, start_va, npages, prot, (flags & MAP_FIXED) > 0);
   p->max_mmaped = ret_addr + npages * PGSIZE > p->max_mmaped ? ret_addr + npages * PGSIZE : p->max_mmaped;
   // printf("[K] sys_mmap: ret_addr=%p npages=%d\n", ret_addr, npages);
   return ret_addr;

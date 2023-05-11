@@ -245,10 +245,10 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
   return newsz;
 }
 
-uint64
-uvmmap(pagetable_t pagetable, uint64 npages, int perm)
+
+static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages, int fail_if_blocked)
 {
-  uint64 map_at = MMAP_BASE;
+  uint64 map_at = search_start;
   for(; map_at < MAXVA; map_at += PGSIZE)
   {
     int free = 1;
@@ -260,13 +260,28 @@ uvmmap(pagetable_t pagetable, uint64 npages, int perm)
     }
     if(free)
       break;
+    if(fail_if_blocked)
+      return 0;
   }
   uint64 top_addr = map_at + npages * PGSIZE;
   if(top_addr >= MAXVA)
   {
-    printf("uvmmap: out of virtual memory\n");
-    return 0;
+    if(search_start == MMAP_BASE) {
+      printf("uvmmap: out of virtual memory\n");
+      return 0;
+    } else {
+      return find_va(pagetable, MMAP_BASE, npages, 0);
+    }
   }
+  return map_at;
+}
+
+uint64
+uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, int fail_if_blocked)
+{
+  uint64 map_at = find_va(pagetable, prefferered_addr, npages, fail_if_blocked);
+  if(map_at == 0)
+    return 0;
   // printf("[K] uvmmap: mapping %d pages at %p\n", npages, map_at);
   int clean_perm = PTE_U 
             | ((perm & PROT_READ) ? PTE_R : 0) 

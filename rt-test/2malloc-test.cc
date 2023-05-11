@@ -6,6 +6,7 @@
 
 #include <rt-test/assert.h>
 #include <user/mmap.h>
+#include <user/bmalloc.h>
 
 // void main() {
 // 	for (int i = 1; i < 64; ++i) {
@@ -27,4 +28,13 @@ void main() {
     *ptr = 0x12345678;
     printf(" wrote to addr. freeing\n");
     free(ptr);
+
+    // for(int i = 0; i < (1 << 16); i++) {
+    //     auto block2 = block_alloc(2048, 8);
+    //     if(block2.begin == 0)
+    //         printf("failed\n");
+    //     //printf("block2: %p\n", block2.begin);
+    //     ((uint32 *)block2.begin)[0] = 0x12345678;
+    // }
+    // term();
 }
