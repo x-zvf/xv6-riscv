@@ -2,6 +2,6 @@
 
 int main() {
   // this is a pointless test
-  printf("foo-bench executes\n");
+  printf("foo-test executes\n");
   return 0;
 }
