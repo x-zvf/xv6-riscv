@@ -248,8 +248,9 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
 
 static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages, int fail_if_blocked)
 {
+  #define MMAP_MAX MAXVA-4096 * 2
   uint64 map_at = search_start;
-  for(; map_at < MAXVA; map_at += PGSIZE)
+  for(; map_at < MMAP_MAX; map_at += PGSIZE)
   {
     int free = 1;
     for(uint64 i = 0; i < npages; i++) {
@@ -264,7 +265,7 @@ static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages,
       return 0;
   }
   uint64 top_addr = map_at + npages * PGSIZE;
-  if(top_addr >= MAXVA)
+  if(top_addr >= MMAP_MAX)
   {
     if(search_start == MMAP_BASE) {
       printf("uvmmap: out of virtual memory\n");

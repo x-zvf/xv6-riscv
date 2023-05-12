@@ -116,8 +116,12 @@ sys_mmap(void) {
   struct proc *p = myproc();
 
   uint64 start_va = addr > MMAP_BASE ? addr : MMAP_BASE;
+
   uint64 ret_addr = uvmmap(p->pagetable, start_va, npages, prot, (flags & MAP_FIXED) > 0);
-  p->max_mmaped = ret_addr + npages * PGSIZE > p->max_mmaped ? ret_addr + npages * PGSIZE : p->max_mmaped;
+
+  p->max_mmaped = (ret_addr + npages * PGSIZE > p->max_mmaped) ? 
+      ret_addr + npages * PGSIZE
+      : p->max_mmaped;
   // printf("[K] sys_mmap: ret_addr=%p npages=%d\n", ret_addr, npages);
   return ret_addr;
 }

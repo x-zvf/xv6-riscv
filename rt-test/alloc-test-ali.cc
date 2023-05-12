@@ -27,7 +27,7 @@ void test_align(void *ptr, int alignment) {
 
 void main() {
 	for(int i = 1; i < 16; ++i) {
-		printf("i = %d\n", i);
+		// printf("i = %d\n", i);
 		auto malloced = malloc(i);
 		assert(malloced);
 		test_align(malloced, i);
@@ -38,7 +38,7 @@ void main() {
 		test_align(block.begin, i);
 		block_free(block);
 	}
-	printf("passed 1\n");
+	// printf("passed 1\n");
 
 	for(int i = 16; i < 4096; ++i) {
 		auto malloced = malloc(i);
@@ -46,42 +46,42 @@ void main() {
 		test_align(malloced, 16);
 		free(malloced);
 
-		printf("here ");
+		// printf("here ");
 		auto block1 = block_alloc(i, 16);
-		printf(" 1 ");
+		// printf(" 1 ");
 		assert(block1.begin);
 		test_align(block1.begin, 16);
-		printf(" 2 ");
+		// printf(" 2 ");
 		block_free(block1);
 
-		printf(" 3 ");
+		// printf(" 3 ");
 		auto block2 = block_alloc(i, 8);
-		printf(" 4 ");
+		// printf(" 4 ");
 		assert(block2.begin);
 		test_align(block2.begin, 8);
-		printf(" 5 ");
+		// printf(" 5 ");
 		block_free(block2);
 
-		printf(" 6 ");
+		// printf(" 6 ");
 		auto block3 = block_alloc(i, 4);
 		assert(block3.begin);
 		test_align(block3.begin, 4);
-		printf(" 7 ");
+		// printf(" 7 ");
 		block_free(block3);
 
-		printf(" 8 ");
+		// printf(" 8 ");
 		auto block4 = block_alloc(i, 2);
 		assert(block4.begin);
 		test_align(block4.begin, 2);
-		printf(" 9 ");
+		// printf(" 9 ");
 		block_free(block4);
 
-printf(" 10 ");
+// printf(" 10 ");
 		auto block5 = block_alloc(i, 1);
 		assert(block5.begin);
 		test_align(block5.begin, 1);
-		printf(" 11 ");
+		// printf(" 11 ");
 		block_free(block5);
-		printf(" _ \n");
+		// printf(" _ \n");
 	}
 }
