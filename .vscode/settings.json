@@ -7,5 +7,6 @@
         "**/*.d": true,
         "**/*.o": true,
         "**/*.sym": true
-    }
+    },
+    "editor.formatOnSave": true
 }
