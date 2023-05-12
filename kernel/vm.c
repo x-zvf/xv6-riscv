@@ -278,11 +278,21 @@ static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages,
 }
 
 uint64
-uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, int fail_if_blocked)
+uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, int flags)
 {
-  uint64 map_at = find_va(pagetable, prefferered_addr, npages, fail_if_blocked);
-  if(map_at == 0)
-    return 0;
+
+  uint64 map_at = find_va(pagetable, prefferered_addr, npages, flags & (MAP_FIXED | MAP_FIXED_NOREPLACE));
+  if(map_at == 0) {
+    if(flags & MAP_FIXED && !(flags & MAP_FIXED_NOREPLACE)) {
+      for(int i = 0; i < npages; i++) {
+        if(walkaddr(pagetable, prefferered_addr + i * PGSIZE)) {
+          uvmunmap(pagetable, prefferered_addr + i * PGSIZE, 1, 1);
+        }
+      }
+      map_at = prefferered_addr;
+    } else
+    return -1;
+  }
   // printf("[K] uvmmap: mapping %d pages at %p\n", npages, map_at);
   int clean_perm = PTE_U 
             | ((perm & PROT_READ) ? PTE_R : 0) 
@@ -295,15 +305,18 @@ uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, 
     if(mem == 0)
     {
       uvmunmap(pagetable, map_at, i, 1);
-      return 0;
+      return -1;
     }
+    uint64 *to_clear = (uint64*)mem;
+    for(int j = 0; j < PGSIZE/8; j++)
+      to_clear[j] = 0;
     // printf("[K] mapping page %d at %p\n", i, map_at + i*PGSIZE);
     if(mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64)mem, clean_perm) != 0)
     {
       printf("uvmmap: mappages failed\n");
       uvmunmap(pagetable, map_at, i, 1);
       kfree(mem);
-      return 0;
+      return -1;
     }
   }
   // printf("[K] uvmmap: mapped %d pages at %p\n", npages, map_at);

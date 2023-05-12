@@ -313,7 +313,7 @@ void _buddy_free(void *ptr) {
     if (!is_block_marked(pm, ptr, order)) { continue; }
     mark_block(pm, ptr, order, 0);
     if (order == BUDDY_MAX_ORDER) {
-      if (bmalloc_enable_printing) printf("push order=%d ptr=%x to freelist\n", order, ptr);
+      if (bmalloc_enable_printing) printf("push maximal order=%d ptr=%x to freelist\n", order, ptr);
       free_list_push(order, ptr);
       return;
     }
@@ -329,7 +329,6 @@ void _buddy_free(void *ptr) {
       if (bmalloc_enable_printing) { /*REMOVE*/
         printf("buddy is marked, can not coalesce; adding ptr to freelist\n");
       } /*REMOVE*/
-      printf("no_coalesce push order=%d ptr=%x to freelist\n", order, ptr);
       free_list_push(order, ptr);
     } else {
 
@@ -366,11 +365,14 @@ block block_alloc(uint32_t size, uint32_t align) {
     return {0, 0, 0};
   }
   if (size >= PGSIZE) { return {_malloc_large(size), ROUND_UP_TO_PAGE_SIZE(size), PGSIZE}; }
-  if (align <= size) return {malloc(size), size, size};
-  uint32_t order           = ord_of_next_power_of_two(size);
+
+  uint32_t order = ord_of_next_power_of_two(size);
+
+  if (align <= size) return {_buddy_malloc(order), (1U << order), (1U << order)};
+
   uint32_t alignment_order = ord_of_next_power_of_two(align);
   if (bmalloc_enable_printing) printf("Buddy allocating order = %d\n", order);
-  return {_buddy_highalign_malloc(order, alignment_order), size, (1U << alignment_order)};
+  return {_buddy_highalign_malloc(order, alignment_order), (1U << order), (1U << alignment_order)};
 }
 
 void block_free(block block) {

@@ -97,8 +97,7 @@ sys_mmap(void) {
   argint(5, &off);
 
   if(len == 0 || fildes != -1 || off != 0 
-  || (flags | MAP_FIXED) != (MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED)
-  || prot != (PROT_READ | PROT_WRITE)) {
+  || (flags | MAP_FIXED | MAP_FIXED_NOREPLACE | MAP_POPULATE) != (MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED | MAP_FIXED_NOREPLACE | MAP_POPULATE)) {
     printf("[K] sys_mmap: unsupported parameter(s)\n");
     return -1;
   }
@@ -106,7 +105,7 @@ sys_mmap(void) {
     printf("[K] sys_mmap: addr not page aligned\n");
     return -1;
   }
-  if(flags & MAP_FIXED && addr < MMAP_BASE) {
+  if(flags & MAP_FIXED && (addr < MMAP_BASE || addr > MAXVA)) {
     printf("[K] sys_mmap: MAP_FIXED: invalid address\n");
     return -1;
   }
@@ -117,7 +116,7 @@ sys_mmap(void) {
 
   uint64 start_va = addr > MMAP_BASE ? addr : MMAP_BASE;
 
-  uint64 ret_addr = uvmmap(p->pagetable, start_va, npages, prot, (flags & MAP_FIXED) > 0);
+  uint64 ret_addr = uvmmap(p->pagetable, start_va, npages, prot, flags);
 
   p->max_mmaped = (ret_addr + npages * PGSIZE > p->max_mmaped) ? 
       ret_addr + npages * PGSIZE
@@ -134,7 +133,6 @@ sys_munmap(void) {
   argint(1, &len);
   // printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
   if(addr % PGSIZE != 0 || len % PGSIZE != 0) {
-    printf("[K] sys_munmap: addr or len not page aligned\n");
     return -1;
   }
   uint64 npages = len / PGSIZE;
@@ -143,7 +141,6 @@ sys_munmap(void) {
   struct proc *p = myproc();
   for(int i = 0; i < npages; i++) {
     if(walkaddr(p->pagetable, addr + i * PGSIZE) == 0) {
-      printf("[K] sys_munmap: addr=%p (page %n) not mapped\n", addr, i);
       return 0;
     }
   }

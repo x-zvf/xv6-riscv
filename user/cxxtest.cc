@@ -1,59 +1,79 @@
-#include "user/user.h"
+/*!
+ * \file
+ * \brief test allocation alignments
+ */
 
-const char string[] = "Hello World! ";
+#include "rt-test/assert.h"
+#include "user/bmalloc.h"
 
-long long stringlen(char *buf) {
-  if (!buf) return 0;
-  long long i = 0;
-  while (buf[i]) ++i;
-  return i;
-}
-
-struct int_to_str_returnable {
-  char buf[25];
-};
-struct int_to_str_returnable ll_to_string(long long value) {
-  struct int_to_str_returnable wrapper = {0};
-
-  for (int i = 0; value; ++i) {
-    wrapper.buf[i] = (value % 10) + '0';
-    value /= 10;
+void test_align(void *ptr, int alignment) {
+  auto val = reinterpret_cast<uint64>(ptr);
+  if (alignment & 1) return;
+  if (alignment & 2) {
+    assert((val & 1) == 0);
+    return;
   }
-  long long len = stringlen(wrapper.buf);
-  for (int i = 0; i < stringlen(wrapper.buf) / 2; ++i) {
-    char tmp                 = wrapper.buf[len - i - 1];
-    wrapper.buf[len - i - 1] = wrapper.buf[i];
-    wrapper.buf[i]           = tmp;
+  if (alignment & 4) {
+    assert((val & 3) == 0);
+    return;
   }
-  if (!wrapper.buf[0]) wrapper.buf[0] = '0';
-  return wrapper;
+  if (alignment & 8) {
+    assert((val & 7) == 0);
+    return;
+  }
+  assert(!(val & 15));
 }
 
-template<typename T>
-void print_size(T &&) {
-  printf("size: %d\n", int(sizeof(T)));
-}
+void main() {
 
+  for (int i = 1; i < 16; ++i) {
+    auto malloced = malloc(i);
+    assert(malloced);
+    test_align(malloced, i);
+    free(malloced);
 
-using ll = long long;
-int main(int argc, char **) {
-  int group = 42;
-  int copy  = group;
+    auto block = block_alloc(i, i & 1 ? 1 : i & 2 ? 2 : i & 4 ? 4 : 8);
+    assert(block.begin);
+    test_align(block.begin, i);
+    block_free(block);
+  }
 
-  struct int_to_str_returnable wrapper = ll_to_string(group);
-  long long len                        = stringlen(wrapper.buf);
-  wrapper.buf[len]                     = '\n';
+  for (int i = 16; i < 4096; ++i) {
+    auto malloced = malloc(i);
+    assert(malloced);
+    test_align(malloced, 16);
+    free(malloced);
 
-  len += 1;
-  if (sizeof(string) != write(1, string, sizeof(string))) return 1;
-  if (len != write(1, wrapper.buf, len)) return 1;
-  printf("%s%d\n", string, copy);
+    auto block1 = block_alloc(i, 16);
+    assert(block1.begin);
+    test_align(block1.begin, 16);
+    block_free(block1);
 
-  //	if(argc > 1) hello(copy);
-  print_size(int());
-  print_size(ll());
-  print_size(long());
-  cxx(0);
-  cxx(1);
-  return 0;
+    //printf("size 8; i = %d\n", i);
+    if (i == 2048) {
+      // fooo
+      printf("should break now\n");
+    }
+    auto block2 = block_alloc(i, 8);
+    assert(block2.begin);
+    test_align(block2.begin, 8);
+    block_free(block2);
+
+    //printf("size 4; i = %d\n", i);
+
+    auto block3 = block_alloc(i, 4);
+    assert(block3.begin);
+    test_align(block3.begin, 4);
+    block_free(block3);
+
+    auto block4 = block_alloc(i, 2);
+    assert(block4.begin);
+    test_align(block4.begin, 2);
+    block_free(block4);
+
+    auto block5 = block_alloc(i, 1);
+    assert(block5.begin);
+    test_align(block5.begin, 1);
+    block_free(block5);
+  }
 }
