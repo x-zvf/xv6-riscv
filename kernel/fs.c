@@ -64,8 +64,8 @@ balloc(uint dev)
     bp = bread(dev, BBLOCK(b, sb));
     for(bi = 0; bi < BPB && b + bi < sb.size; bi++){
       m = 1 << (bi % 8);
-      if((*(bp->data[bi/8]) & m) == 0){  // Is block free?
-        *(bp->data[bi/8]) |= m;  // Mark block in use.
+      if((bp->data[bi/8] & m) == 0){  // Is block free?
+        bp->data[bi/8] |= m;  // Mark block in use.
         log_write(bp);
         brelse(bp);
         bzero(dev, b + bi);
@@ -88,9 +88,9 @@ bfree(int dev, uint b)
   bp = bread(dev, BBLOCK(b, sb));
   bi = b % BPB;
   m = 1 << (bi % 8);
-  if((*(bp->data[bi/8]) & m) == 0)
+  if((bp->data[bi/8] & m) == 0)
     panic("freeing free block");
-  *(bp->data[bi/8]) &= ~m;
+  bp->data[bi/8] &= ~m;
   log_write(bp);
   brelse(bp);
 }

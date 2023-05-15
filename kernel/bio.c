@@ -40,7 +40,7 @@ binit(void)
   for(b = bcache.buf; b < bcache.buf+NBUF; b++){
     b->next = bcache.head.next;
     b->prev = &bcache.head;
-    b->data = (uchar**) kalloc();
+    b->data = (uchar*) kalloc();
     initsleeplock(&b->lock, "buffer");
     bcache.head.next->prev = b;
     bcache.head.next = b;
