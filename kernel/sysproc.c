@@ -96,11 +96,24 @@ sys_mmap(void) {
   argint(4, &fildes);
   argint(5, &off);
 
-  if(len == 0 || fildes != -1 || off != 0 
-  || (flags | MAP_FIXED | MAP_FIXED_NOREPLACE | MAP_POPULATE) != (MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED | MAP_FIXED_NOREPLACE | MAP_POPULATE)) {
-    printf("[K] sys_mmap: unsupported parameter(s)\n");
+  if (len <= 0 || off != 0) {
+    printf("[K] sys_mmap: unsupported parameter(s): invalid length or offset\n");
     return -1;
   }
+  if ((flags) & ~(MAP_ANONYMOUS | MAP_PRIVATE | MAP_SHARED | MAP_FIXED | MAP_FIXED_NOREPLACE | MAP_POPULATE)) {
+    printf("[K] sys_mmap: unsupported parameter(s): unsupported flags\n");
+    return -1;
+  }
+  if ((flags & MAP_SHARED) ? fildes < 0 : 0) {
+    printf("[K] sys_mmap: unsupported parameter(s): MAP_SHARED + invalid file descriptor\n");
+    return -1;
+  }
+  if ((flags & MAP_SHARED) && (flags & MAP_PRIVATE)) {
+    printf("[K] sys_mmap: unsupported parameter(s): MAP_SHARED + MAP_PRIVATE\n");
+    return -1;
+  }
+
+
   if(addr % PGSIZE != 0) {
     printf("[K] sys_mmap: addr not page aligned\n");
     return -1;
@@ -109,6 +122,7 @@ sys_mmap(void) {
     printf("[K] sys_mmap: MAP_FIXED: invalid address\n");
     return -1;
   }
+
   // printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
 
   uint64 npages = PGROUNDUP(len) / PGSIZE;
@@ -116,11 +130,11 @@ sys_mmap(void) {
 
   uint64 start_va = addr > MMAP_BASE ? addr : MMAP_BASE;
 
-  uint64 ret_addr = uvmmap(p->pagetable, start_va, npages, prot, flags);
-
-  p->max_mmaped = (ret_addr + npages * PGSIZE > p->max_mmaped) ? 
-      ret_addr + npages * PGSIZE
-      : p->max_mmaped;
+  uint64 ret_addr = uvmmap(p->pagetable, start_va, npages, fildes, prot, flags);
+  if(ret_addr != -1ULL) {
+    p->max_mmaped = (ret_addr + npages * PGSIZE > p->max_mmaped) ?
+                    ret_addr + npages * PGSIZE : p->max_mmaped;
+  }
   // printf("[K] sys_mmap: ret_addr=%p npages=%d\n", ret_addr, npages);
   return ret_addr;
 }

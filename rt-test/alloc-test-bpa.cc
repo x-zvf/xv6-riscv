@@ -7,6 +7,8 @@
 #include "user/bmalloc.h"
 
 void main() {
+  term();
+  return;
   setup_balloc();
   for (int i = 4096; i < 1 << 16; ++i) {
     auto block = block_alloc(i, 4096);

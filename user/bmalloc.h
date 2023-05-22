@@ -92,11 +92,7 @@ block block_alloc(uint32_t size, uint32_t align);
 void block_free(block block);
 void setup_balloc(void);
 
-
-
 void setup_malloc(void);
-
-
 
 #ifdef __cplusplus
 }

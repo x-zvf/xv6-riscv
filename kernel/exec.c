@@ -70,6 +70,10 @@ exec(char *path, char **argv)
   uint64 oldsz = p->sz;
 
   p->max_mmaped = 0;
+  for(int i = 0; i < NMAPPINGS; i++) {
+    p->file_mappings[i].va = 0;
+    p->file_mappings[i].fd = -1;
+  }
 
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible as a stack guard.

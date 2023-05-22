@@ -1,6 +1,7 @@
 #include "memlayout.h"
 #include "defs.h"
 #include "mmap.h"
+#include "buf.h"
 
 /*
  * the kernel's page table.
@@ -278,7 +279,7 @@ static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages,
 }
 
 uint64
-uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, int flags)
+uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int fildes, int perm, int flags)
 {
 
   uint64 map_at = find_va(pagetable, prefferered_addr, npages, flags & (MAP_FIXED | MAP_FIXED_NOREPLACE));
@@ -291,33 +292,90 @@ uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, 
       }
       map_at = prefferered_addr;
     } else
-    return -1;
+      return -1;
   }
   // printf("[K] uvmmap: mapping %d pages at %p\n", npages, map_at);
   int clean_perm = PTE_U 
             | ((perm & PROT_READ) ? PTE_R : 0) 
             | ((perm & PROT_WRITE) ? PTE_W : 0) 
             | ((perm & PROT_EXEC) ? PTE_X : 0);
-  
-  for(int i = 0; i < npages; i++)
-  {
-    char *mem = kalloc();
-    if(mem == 0)
-    {
-      uvmunmap(pagetable, map_at, i, 1);
+
+  if(fildes < 0){
+    for(int i = 0; i < npages; i++) {
+      char *mem = kalloc();
+      if(mem == 0) {
+        uvmunmap(pagetable, map_at, i, 1);
+        return -1;
+      }
+      uint64 *to_clear = (uint64*) mem;
+      for(int j = 0; j < PGSIZE/8; j++)
+        to_clear[j] = 0;
+      // printf("[K] mapping page %d at %p\n", i, map_at + i*PGSIZE);
+      if (mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64) mem, clean_perm) != 0)
+        {
+          printf("[K] uvmmap: mappages failed\n");
+          uvmunmap(pagetable, map_at, i, 1);
+          kfree(mem);
+          return -1;
+        }
+    }
+  } else {
+    // map a file
+    struct proc *p = myproc();
+    printf("[K] uvmmap: Found proc *p=%p, with name=%s\n", p, p->name);
+    if(fildes > NOFILE || p->ofile[fildes] == 0) {
       return -1;
     }
-    uint64 *to_clear = (uint64*)mem;
-    for(int j = 0; j < PGSIZE/8; j++)
-      to_clear[j] = 0;
-    // printf("[K] mapping page %d at %p\n", i, map_at + i*PGSIZE);
-    if(mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64)mem, clean_perm) != 0)
-    {
-      printf("uvmmap: mappages failed\n");
-      uvmunmap(pagetable, map_at, i, 1);
-      kfree(mem);
+    struct file *to_map = p->ofile[fildes];
+    if(to_map->type != FD_INODE) {
       return -1;
     }
+
+    //find index in mapping
+    int i;
+    for(i = 0; i < NMAPPINGS; i++) {
+      if(p->file_mappings[i].fd < 0)
+        break;
+    }
+    if(i == NMAPPINGS) {
+      printf("[K] uvmmap: maximum number of file mappings exceeded \n");
+      return -1;
+    }
+    p->file_mappings[i].fd = fildes;
+    p->file_mappings[i].va = map_at;
+
+    //map buffer.data auf va for all pages
+
+    if(to_map->type != FD_INODE) {
+      printf("[K] Mapping non-inode files is not implemented yet.\n");
+      return -1;
+    }
+    // We are evil, so we are allowed to that. If you think otherwise, please cast us `Time Stop' for 10 hours.
+    struct buf *alloc_buffers[npages];
+//    begin_op();
+//    ilock(to_map->ip);
+    for(int page = 0; page < npages; page++) {
+      uint dev_addr = bmap(to_map->ip, page);
+      if (dev_addr == 0) {
+        printf("[K] uvmmap: no disk space left\n");
+        return -1;
+      }
+      struct buf *bp = bread(to_map->ip->dev, dev_addr);
+      alloc_buffers[page] = bp;
+      printf("Mapping map_at=");
+      if (mappages(pagetable, map_at + i*PGSIZE, PGSIZE, (uint64) bp->data, clean_perm) != 0)
+      {
+        printf("[K] uvmmap: mappages failed\n");
+        uvmunmap(pagetable, map_at, i, 1);
+        for(int j = 0; j <= page; j++)
+          brelse(alloc_buffers[j]);
+//        iunlock(to_map->ip);
+//        end_op();
+        return -1;
+      }
+    }
+//    iunlock(to_map->ip);
+//    end_op();
   }
   // printf("[K] uvmmap: mapped %d pages at %p\n", npages, map_at);
   return map_at;
