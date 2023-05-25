@@ -174,19 +174,37 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
   if((va % PGSIZE) != 0)
     panic("uvmunmap: not aligned");
 
-  for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
-    if((pte = walk(pagetable, a, 0)) == 0)
-      panic("uvmunmap: walk");
-    if((*pte & PTE_V) == 0)
-      panic("uvmunmap: not mapped");
-    if(PTE_FLAGS(*pte) == PTE_V)
-      panic("uvmunmap: not a leaf");
-    if(do_free){
-      uint64 pa = PTE2PA(*pte);
-      kfree((void*)pa);
+  // Check, if memory is file-backed. If it is, fildes is set to the actual fd and the index of the file in the
+  // mappings-table is stored for later use.
+  int fildes = -1;
+  int f_idx = 0;
+  struct proc *p = myproc();
+  for (; f_idx < NMAPPINGS; f_idx++) {
+    if (p->file_mappings[f_idx].va == va) {
+      fildes = p->file_mappings[f_idx].fd;
+      break;
     }
-    *pte = 0;
   }
+
+  if (fildes < 0) {
+    // In this case, we unmap no file. Proceed as before.
+    for (a = va; a < va + npages * PGSIZE; a += PGSIZE) {
+      if ((pte = walk(pagetable, a, 0)) == 0)
+        panic("uvmunmap: walk");
+      if ((*pte & PTE_V) == 0)
+        panic("uvmunmap: not mapped");
+      if (PTE_FLAGS(*pte) == PTE_V)
+        panic("uvmunmap: not a leaf");
+      if (do_free) {
+        uint64 pa = PTE2PA(*pte);
+        kfree((void *) pa);
+      }
+      *pte = 0;
+    }
+    return;
+  }
+  // Else, we unmap a file. Panic!
+  panic("uvunmap: unmapping files is not implemented!");
 }
 
 // create an empty user page table.
@@ -321,6 +339,7 @@ uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int fildes
     }
   } else {
     // map a file
+    // TODO: Find the reason for error that happens on l. 377, probably by calling bmap.
     struct proc *p = myproc();
     printf("[K] uvmmap: Found proc *p=%p, with name=%s\n", p, p->name);
     if(fildes > NOFILE || p->ofile[fildes] == 0) {
