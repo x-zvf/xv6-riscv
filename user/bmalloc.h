@@ -46,20 +46,35 @@ typedef struct block block;
 
 struct buddy_page_metadata {
   void *address; // the address of the page, for which this mapping applies.
+  uint64_t in_use_bitset[16];
+};
+
+struct mmap_page_metadata {
+  void *address;
+  uint32_t npages : 31;
+  uint32_t is_valid : 1;
+};
+
+
+
+#define METADATA_PAGE_HEADER_SIZE (3 * sizeof(void *) + 2 * sizeof(uint32))
+#define NUM_BUDDY_MAPPINGS_PER_METADATA_PAGE                                                       \
+  ((PGSIZE - METADATA_PAGE_HEADER_SIZE) / sizeof(struct buddy_page_metadata))
+#define NUM_MMAP_MAPPINGS_PER_METADATA_PAGE                                                        \
+  ((PGSIZE - METADATA_PAGE_HEADER_SIZE) / sizeof(struct mmap_page_metadata))
+
+struct metadata_page {
+  void *min_address_mapped;
+  void *max_address_mapped;
+  struct metadata_page *next;
+  uint32 num_mappings_free;
+  uint32 _padding;
   union {
-    uint64_t in_use_bitset[16];
-    uint64_t mmap_npages;
+    struct buddy_page_metadata buddy_mappings[0];
+    struct mmap_page_metadata mmap_mappings[0];
   };
 };
 
-struct buddy_mappings_segment {
-  void *min_address_mapped;
-  void *max_address_mapped;
-  struct buddy_mappings_segment *next_segment;
-  uint32_t mappings_capacity;
-  uint32_t mappings_populated;
-  struct buddy_page_metadata mappings[];
-};
 
 #define FREELIST_INDEX(order) (order - BUDDY_MIN_ORDER)
 #define NUM_FREE_LISTS (BUDDY_MAX_ORDER - BUDDY_MIN_ORDER + 1)
@@ -68,10 +83,15 @@ struct buddy_mappings_segment {
 #define PAGE_OFFSET(ptr) ((void *)((uint64_t)ptr & (PGSIZE - 1)))
 
 struct malloc_metadata {
-  struct buddy_mappings_segment *first_metadata_segment; //for lookup
-  struct buddy_mappings_segment *last_metadata_segment;  //for appending a new segment
+  struct metadata_page *first_buddy_metadata_page; //for lookup
+  struct metadata_page *last_buddy_metadata_page;  //for appending a new segment
+  struct metadata_page *first_mmap_metadata_page;
+  struct metadata_page *last_mmap_metadata_page;
 
-  void *free_lists[NUM_FREE_LISTS];
+  uint32 num_mmap_metadata_free;
+  uint32 num_buddy_metadata_free;
+
+  void *buddy_free_lists[NUM_FREE_LISTS];
   void *end_of_sbrk_segment;
 };
 
@@ -87,16 +107,17 @@ void _free(void *ptr);
 // #define malloc _malloc
 // #define free _free
 
-block block_alloc(uint32_t size, uint32_t align);
-
-void block_free(block block);
-void setup_balloc(void);
-
-
-
-void setup_malloc(void);
+//block block_alloc(uint32_t size, uint32_t align);
+//void block_free(block block);
+//void setup_balloc(void);
+//void setup_malloc(void);
 
 
+block block_alloc(uint32_t size, uint32_t align) __attribute__((weak));
+
+void block_free(block block) __attribute__((weak));
+void setup_balloc(void) __attribute__((weak));
+void setup_malloc() __attribute__((weak));
 
 #ifdef __cplusplus
 }
