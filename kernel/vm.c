@@ -1,6 +1,7 @@
 #include "memlayout.h"
 #include "defs.h"
 #include "mmap.h"
+#include "buf.h"
 
 /*
  * the kernel's page table.
@@ -205,7 +206,7 @@ uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm) {
   return newsz;
 }
 
-
+//TODO: make find_va use mmap_mapping_page info, not strictly necessary
 static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages, int fail_if_blocked) {
 #define MMAP_MAX MAXVA - 4096 * 2
   uint64 map_at = search_start;
@@ -217,6 +218,7 @@ static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages,
         break;
       }
     }
+    // WARNING: This only works, because we do not have demand paging.
     if (free) break;
     if (fail_if_blocked) return 0;
   }
@@ -232,14 +234,26 @@ static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages,
   return map_at;
 }
 
-uint64 uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int perm, int flags) {
+uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 prefferered_addr, uint64 npages, int perm, int flags, struct inode *in) {
 
   uint64 map_at = find_va(pagetable, prefferered_addr, npages, flags & (MAP_FIXED | MAP_FIXED_NOREPLACE));
   if (map_at == 0) {
     if (flags & MAP_FIXED && !(flags & MAP_FIXED_NOREPLACE)) {
       for (int i = 0; i < npages; i++) {
         if (walkaddr(pagetable, prefferered_addr + i * PGSIZE)) {
-          uvmunmap(pagetable, prefferered_addr + i * PGSIZE, 1, 1);
+          struct mmap_mapping_page *mp = mmapped;
+          while(mp) {
+            int found = 0;
+            for(uint32 j = 0; j < MMAP_MAPPING_PAGE_N; j++) {
+              if(mp->mappings[j].is_valid && mp->mappings[j].va == prefferered_addr + i * PGSIZE) {
+                uvmunmap(pagetable, prefferered_addr + i * PGSIZE, 1, mp->mappings[j].is_shared ? 0 : 1);
+                found = 1;
+                break;
+              }
+            }
+            if(found) break;
+            mp = mp->next;
+          }
         }
       }
       map_at = prefferered_addr;
@@ -250,6 +264,28 @@ uint64 uvmmap(pagetable_t pagetable, uint64 prefferered_addr, uint64 npages, int
   int clean_perm = PTE_U | ((perm & PROT_READ) ? PTE_R : 0) | ((perm & PROT_WRITE) ? PTE_W : 0) |
                    ((perm & PROT_EXEC) ? PTE_X : 0);
 
+  if(in != 0) {
+    for(uint32 i = 0; i < npages; i++) {
+      uint32 dev_addr = bmap(in, i);
+      if(dev_addr == 0) {
+        printf("uvmmap: bmap failed\n");
+        uvmunmap(pagetable, map_at, i, 0);
+        return -1;
+      }
+      struct buf *buf = bread(in->dev, dev_addr);
+      if(buf == 0) {
+        printf("uvmmap: bread failed\n");
+        uvmunmap(pagetable, map_at, i, 0);
+        return -1;
+      }
+      if (mappages(pagetable, map_at + i * PGSIZE, PGSIZE, (uint64)buf->data, clean_perm) != 0) {
+        printf("uvmmap: mappages failed\n");
+        uvmunmap(pagetable, map_at, i, 1);
+        return -1;
+      }
+    }
+    return map_at;
+  }
   for (int i = 0; i < npages; i++) {
     char *mem = kalloc();
     if (mem == 0) {

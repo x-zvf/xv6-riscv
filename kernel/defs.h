@@ -45,6 +45,8 @@ int filestat(struct file *, uint64 addr);
 int filewrite(struct file *, uint64, int n);
 
 // fs.c
+
+uint bmap(struct inode *, uint);
 void fsinit(int);
 int dirlink(struct inode *, char *, uint);
 struct inode *dirlookup(struct inode *, char *, uint *);
@@ -99,7 +101,7 @@ int growproc(int);
 void proc_mapstacks(pagetable_t);
 pagetable_t proc_pagetable(struct proc *);
 struct mmap_mapping_page;
-void proc_freepagetable(pagetable_t, uint64, struct mmap_mapping_page*);
+void proc_freepagetable(pagetable_t, uint64, struct mmap_mapping_page *);
 int kill(int);
 int killed(struct proc *);
 void setkilled(struct proc *);
@@ -174,7 +176,8 @@ int mappages(pagetable_t, uint64, uint64, uint64, int);
 pagetable_t uvmcreate(void);
 void uvmfirst(pagetable_t, uchar *, uint);
 uint64 uvmalloc(pagetable_t, uint64, uint64, int);
-uint64 uvmmap(pagetable_t, uint64, uint64, int, int);
+struct inode;
+uint64 uvmmap(pagetable_t, struct mmap_mapping_page *, uint64, uint64, int, int, struct inode *);
 uint64 uvmdealloc(pagetable_t, uint64, uint64);
 int uvmcopy(pagetable_t, pagetable_t, uint64);
 void uvmfree(pagetable_t, uint64);

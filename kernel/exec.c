@@ -18,6 +18,7 @@ int exec(char *path, char **argv) {
   struct inode *ip;
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
+  struct mmap_mapping_page *mmap_mapping_page = 0;
   struct proc *p        = myproc();
 
   begin_op();
@@ -54,8 +55,8 @@ int exec(char *path, char **argv) {
   p            = myproc();
   uint64 oldsz = p->sz;
 
-  struct mmap_mapping_page *mmap_mapping_page = p->mmap_mapping_page;
-  p->mmap_mapping_page                   = 0;
+  mmap_mapping_page = p->mmap_mappings;
+  p->mmap_mappings                   = 0;
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible as a stack guard.
   // Use the second as the user stack.
@@ -105,7 +106,7 @@ int exec(char *path, char **argv) {
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
-  if (pagetable) proc_freepagetable(pagetable, sz, mmap_mapping);
+  if (pagetable) proc_freepagetable(pagetable, sz, mmap_mapping_page);
   if (ip) {
     iunlockput(ip);
     end_op();
