@@ -244,6 +244,7 @@ uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 p
           struct mmap_mapping_page *mp = mmapped;
           while(mp) {
             int found = 0;
+            //TODO: do it like in sys_munmap
             for(uint32 j = 0; j < MMAP_MAPPING_PAGE_N; j++) {
               if(mp->mappings[j].is_valid && mp->mappings[j].va == prefferered_addr + i * PGSIZE) {
                 uvmunmap(pagetable, prefferered_addr + i * PGSIZE, 1, mp->mappings[j].is_shared ? 0 : 1);
@@ -273,6 +274,7 @@ uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 p
         return -1;
       }
       struct buf *buf = bread(in->dev, dev_addr);
+      buf->refcnt++;
       if(buf == 0) {
         printf("uvmmap: bread failed\n");
         uvmunmap(pagetable, map_at, i, 0);

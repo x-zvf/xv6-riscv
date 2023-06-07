@@ -99,12 +99,12 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 struct mmap_mapping {
   uint64 va;
-  uint32 npages: 30;
-  uint8 is_valid: 1;
-  uint8 is_shared: 1;
+  uint32 npages : 32;
+  uint8 is_valid : 1;
+  uint8 is_shared : 1;
 };
 
-#define MMAP_MAPPING_PAGE_N ((PGSIZE - sizeof(char *))/ sizeof(struct mmap_mapping))
+#define MMAP_MAPPING_PAGE_N ((PGSIZE - sizeof(char *)) / sizeof(struct mmap_mapping))
 struct mmap_mapping_page {
   struct mmap_mapping_page *next;
   struct mmap_mapping mappings[MMAP_MAPPING_PAGE_N];
@@ -125,15 +125,15 @@ struct proc {
   struct proc *parent; // Parent process
 
   // these are private to the process, so p->lock need not be held.
-  uint64 kstack;                       // Virtual address of kernel stack
-  uint64 sz;                           // Size of process memory (bytes)
-  pagetable_t pagetable;               // User page table
-  struct mmap_mapping_page *mmap_mappings;  // mmap mappings
-  struct trapframe *trapframe;         // data page for trampoline.S
-  struct context context;              // swtch() here to run process
-  struct file *ofile[NOFILE];          // Open files
-  struct inode *cwd;                   // Current directory
-  char name[16];                       // Process name (debugging)
+  uint64 kstack;                           // Virtual address of kernel stack
+  uint64 sz;                               // Size of process memory (bytes)
+  pagetable_t pagetable;                   // User page table
+  struct mmap_mapping_page *mmap_mappings; // mmap mappings
+  struct trapframe *trapframe;             // data page for trampoline.S
+  struct context context;                  // swtch() here to run process
+  struct file *ofile[NOFILE];              // Open files
+  struct inode *cwd;                       // Current directory
+  char name[16];                           // Process name (debugging)
 };
 
 

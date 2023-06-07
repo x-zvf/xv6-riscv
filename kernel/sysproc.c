@@ -168,14 +168,23 @@ uint64 sys_munmap(void) {
 
   int should_free = -1;
   struct mmap_mapping_page *cpage = p->mmap_mappings;
+  //TODO: decrease ref count for shared mappings
+
   while (cpage != 0)
   {
     // printf("[K] sys_munmap: cpage=%p\n", cpage);
     for(uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
       // printf("[K] i=%d is_valid=%d va=%p\n", i, cpage->mappings[i].is_valid, cpage->mappings[i].va);
       if(cpage->mappings[i].is_valid && cpage->mappings[i].va == addr) {
-        cpage->mappings[i].is_valid = 0;
         should_free = cpage->mappings[i].is_shared ? 0 : 1;
+        if(npages < cpage->mappings[i].npages) {
+          // printf("[K] sys_munmap: partial unmap\n");
+          cpage->mappings[i].npages -= npages;
+          cpage->mappings[i].va += npages * PGSIZE;
+          cpage = 0;
+          break;
+        }
+        cpage->mappings[i].is_valid = 0;
         cpage = 0;
         // printf("[K] sys_munmap: found mapping\n");
         break;
