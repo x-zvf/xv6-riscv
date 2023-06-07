@@ -136,7 +136,7 @@ found:
 static void freeproc(struct proc *p) {
   if (p->trapframe) kfree((void *)p->trapframe);
   p->trapframe = 0;
-  if (p->pagetable) proc_freepagetable(p->pagetable, p->sz, p->max_mmaped);
+  if (p->pagetable) proc_freepagetable(p->pagetable, p->sz, p->mmap_mappings);
   p->pagetable = 0;
   p->sz        = 0;
   p->pid       = 0;
@@ -179,12 +179,23 @@ pagetable_t proc_pagetable(struct proc *p) {
 
 // Free a process's page table, and free the
 // physical memory it refers to.
-void proc_freepagetable(pagetable_t pagetable, uint64 sz, uint64 mmaped) {
+void proc_freepagetable(pagetable_t pagetable, uint64 sz, struct mmap_mapping_page *mmaped) {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
-  for (int i = MMAP_BASE; i < mmaped; i += PGSIZE) {
-    if (walkaddr(pagetable, i) != 0) uvmunmap(pagetable, i, 1, 1);
+
+  while(mmaped != 0) {
+    for(uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
+      if(mmaped->mappings[i].is_valid != 0) {
+        for(uint32 i = 0; i < mmaped->mappings[i].npages; i++) {
+          if(walkaddr(pagetable, mmaped->mappings[i].va + i * PGSIZE) != 0) {
+            uvmunmap(pagetable, mmaped->mappings[i].va + i * PGSIZE, 1, mmaped->mappings[i].is_shared == 1);
+          }
+        }
+      }
+    }
+    mmaped = mmaped->next;
   }
+
   uvmfree(pagetable, sz);
 }
 
