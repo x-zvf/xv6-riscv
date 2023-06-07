@@ -95,7 +95,7 @@ uint64 sys_mmap(void) {
     printf("[K] sys_mmap: unsupported parameter(s): MAP_SHARED + MAP_PRIVATE\n");
     return -1;
   }
-  printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
+  // printf("[K] sys_mmap: mapping length %d with flags %x and prot %x\n", len, flags, prot);
 
   uint64 npages  = PGROUNDUP(len) / PGSIZE;
   struct proc *p = myproc();
@@ -116,7 +116,7 @@ uint64 sys_mmap(void) {
   uint64 start_va = addr > MMAP_BASE ? addr : MMAP_BASE;
 
   uint64 ret_addr = uvmmap(p->pagetable, p->mmap_mappings, start_va, npages, prot, flags, in);
-  printf("[K] sys_mmap: uvmmap ret addr %p\n", ret_addr);
+  // printf("[K] sys_mmap: uvmmap ret addr %p\n", ret_addr);
 
   if(fildes >= 0) {
     iunlock(in);
@@ -155,7 +155,7 @@ uint64 sys_munmap(void) {
   int len;
   argaddr(0, &addr);
   argint(1, &len);
-  printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
+  // printf("[K] sys_munmap: addr=%p len=%d\n", addr, len);
   if (addr % PGSIZE != 0 || len % PGSIZE != 0) { return -1; }
   uint64 npages = len / PGSIZE;
   // printf("[K] sys_munmap: len=%d npages=%d\n", len, npages);
@@ -170,17 +170,18 @@ uint64 sys_munmap(void) {
   struct mmap_mapping_page *cpage = p->mmap_mappings;
   while (cpage != 0)
   {
-    printf("[K] sys_munmap: cpage=%p\n", cpage);
+    // printf("[K] sys_munmap: cpage=%p\n", cpage);
     for(uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
-      printf("[K] i=%d is_valid=%d va=%p\n", i, cpage->mappings[i].is_valid, cpage->mappings[i].va);
+      // printf("[K] i=%d is_valid=%d va=%p\n", i, cpage->mappings[i].is_valid, cpage->mappings[i].va);
       if(cpage->mappings[i].is_valid && cpage->mappings[i].va == addr) {
         cpage->mappings[i].is_valid = 0;
         should_free = cpage->mappings[i].is_shared ? 0 : 1;
         cpage = 0;
-        printf("[K] sys_munmap: found mapping\n");
+        // printf("[K] sys_munmap: found mapping\n");
         break;
       } else if(cpage->mappings[i].is_valid && cpage->mappings[i].va < addr && cpage->mappings[i].va + cpage->mappings[i].npages * PGSIZE > addr) {
-        printf("[K] sys_munmap: partial unmap\n");
+        // printf("[K] sys_munmap: partial unmap\n");
+        should_free = cpage->mappings[i].is_shared ? 0 : 1;
         uint32 currently_mapped_pages = cpage->mappings[i].npages;
         uint32 prev_mapped_pages = (addr - cpage->mappings[i].va) / PGSIZE;
         uint32 next_mapped_pages = currently_mapped_pages - prev_mapped_pages - npages;
@@ -214,14 +215,13 @@ uint64 sys_munmap(void) {
             page_for_new->mappings[i].is_shared = cpage->mappings[i].is_shared;
           }
         }
-        return -1;
       }
     }
     if(cpage != 0)
       cpage = cpage->next;
   }
   if(should_free == -1) {
-    printf("[K] sys_munmap: This was never mapped\n");
+    printf("[K] sys_munmap: The address was never mapped\n");
     return -1;
   }
 
