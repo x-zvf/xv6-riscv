@@ -11,8 +11,6 @@
 void *const addr = reinterpret_cast<void *>(1 << 30);
 
 void main() {
-  // TODO: find out the reason for panic: mappages: remap!
-  assert(0==1);
   void *ptr = mmap(addr, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
   assert(ptr && ptr != MAP_FAILED);
   assert(ptr == addr);
