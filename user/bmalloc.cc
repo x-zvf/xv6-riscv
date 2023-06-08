@@ -479,10 +479,13 @@ void _buddy_free(void *ptr) {
 
 void free(void *ptr) {
   if (ptr == 0) return;
-  if ((uint64_t)ptr >= MAX_MEM)
+  if ((uint64_t)ptr >= MAX_MEM) {
+    if (bmalloc_enable_printing) printf("free: large size\n");
     _free_large(ptr);
-  else
+  } else {
+    if (bmalloc_enable_printing) printf("free: buddy size\n");
     _buddy_free(ptr);
+  }
 }
 
 int bmalloc_enable_printing = 0;
