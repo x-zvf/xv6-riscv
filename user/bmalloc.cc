@@ -132,7 +132,11 @@ static struct metadata_page *find_buddy_page_metadata(uint32 *idx, void *blockpt
 
 static struct metadata_page *find_mmap_page_metadata(uint32 *idx, void *ptr) {
   struct metadata_page *page = metadata.first_mmap_metadata_page;
+  int i                      = 0;
   while (page != 0) {
+    if (bmalloc_enable_printing)
+      printf("[U] find_mmap_page_metadata: Scanning page %d with range %p--%p\n", i,
+        page->min_address_mapped, page->max_address_mapped);
     if (ptr < page->min_address_mapped || ptr > page->max_address_mapped) {
       if (bmalloc_enable_printing)
         printf("ptr %p is not in range %p-%p\n", ptr, page->min_address_mapped, page->max_address_mapped);
@@ -142,7 +146,7 @@ static struct metadata_page *find_mmap_page_metadata(uint32 *idx, void *ptr) {
     for (uint32_t i = 0; i < NUM_MMAP_MAPPINGS_PER_METADATA_PAGE; i++) {
       struct mmap_page_metadata *mapping = &page->mmap_mappings[i];
       if (bmalloc_enable_printing)
-        printf("checking mapping %d: %p valid=%d\n", i, mapping->address, mapping->is_valid);
+        printf("[U] checking mapping %d: %p valid=%d\n", i, mapping->address, mapping->is_valid);
 
       if (mapping->is_valid && mapping->address == ptr) {
         *idx = i;
@@ -196,10 +200,15 @@ static struct metadata_page *get_or_allocate_metadata_page(uint32 *idx, MappingT
       }
     }
   } else {
+    // Get the first free mapping.
     if (metadata.num_mmap_metadata_free > 0) {
+      if (bmalloc_enable_printing)
+        printf("Free mappings at first: %d\n", metadata.num_mmap_metadata_free);
       struct metadata_page *last_mp  = metadata.last_mmap_metadata_page;
       struct metadata_page *first_mp = metadata.first_mmap_metadata_page;
       struct metadata_page *mp       = last_mp->num_mappings_free > 0 ? last_mp : first_mp;
+      // If there is space in the last page, use this space, else loop through all pages until there is space.
+      // Return the first free spot. If there is no free spot, go on.
       while (mp) {
         for (uint32 i = 0; i < NUM_MMAP_MAPPINGS_PER_METADATA_PAGE; i++) {
           if (!mp->mmap_mappings[i].is_valid) {
@@ -212,9 +221,12 @@ static struct metadata_page *get_or_allocate_metadata_page(uint32 *idx, MappingT
     }
   }
   if (bmalloc_enable_printing) printf("allocating new metadata page\n");
+
   // allocate a new metadata page
   struct metadata_page *page = allocate_metadata_page();
+
   if (bmalloc_enable_printing) printf("allocated new metadata page at page = %p\n", page);
+
   if (page == 0) return 0;
 
   if (type == IS_BUDDY) {
@@ -226,6 +238,7 @@ static struct metadata_page *get_or_allocate_metadata_page(uint32 *idx, MappingT
       metadata.last_buddy_metadata_page->next = page;
       metadata.last_buddy_metadata_page       = page;
     }
+    page->num_mappings_free = NUM_BUDDY_MAPPINGS_PER_METADATA_PAGE;
   } else {
     metadata.num_mmap_metadata_free += NUM_MMAP_MAPPINGS_PER_METADATA_PAGE;
     if (metadata.first_mmap_metadata_page == 0) metadata.first_mmap_metadata_page = page;
@@ -235,6 +248,7 @@ static struct metadata_page *get_or_allocate_metadata_page(uint32 *idx, MappingT
       metadata.last_mmap_metadata_page->next = page;
       metadata.last_mmap_metadata_page       = page;
     }
+    page->num_mappings_free = NUM_MMAP_MAPPINGS_PER_METADATA_PAGE;
   }
   *idx = 0;
   return page;
@@ -362,22 +376,20 @@ void *_buddy_highalign_malloc(uint32_t order, uint32_t alignment_order) {
 static void *_malloc_large(uint32_t size) {
   uint64 npages = PGROUNDUP(size) / PGSIZE;
   if (bmalloc_enable_printing) {
-    printf("malloc_large allocating %d bytes (%d pages)\n", size, npages);
+    printf("[U] _malloc_large allocating %d bytes (%d pages)\n", size, npages);
   }
   void *mem = mmap(0, npages * PGSIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   if (mem == 0) return 0;
 
   uint32 idx                    = -1U;
   struct metadata_page *md_page = get_or_allocate_metadata_page(&idx, IS_MMAP);
+
+  // Check that page indeed exists. If not, go die.
   if (md_page == 0) {
     munmap(mem, npages * PGSIZE);
     return 0;
   }
-  if (md_page == 0) {
-    printf("FATAL: md_page == 0\n");
-    exit(-1);
-    term();
-  }
+
   if (bmalloc_enable_printing) { printf("md_page = %p, idx = %d\n", md_page, idx); }
 
   md_page->mmap_mappings[idx].address  = mem;
@@ -385,10 +397,13 @@ static void *_malloc_large(uint32_t size) {
   md_page->mmap_mappings[idx].is_valid = 1;
   md_page->num_mappings_free--;
   metadata.num_mmap_metadata_free--;
-
+  if (bmalloc_enable_printing) {
+    printf("Free mappings on page: %d\n", md_page->num_mappings_free);
+    printf("  \"      \" overall: %d\n", metadata.num_mmap_metadata_free);
+  }
 
   char *maxmem = (char *)mem + npages * PGSIZE;
-  if (md_page->max_address_mapped < maxmem) md_page->max_address_mapped = maxmem;
+  if (md_page->max_address_mapped < maxmem) md_page->max_address_mapped = (void *)maxmem;
   if (md_page->min_address_mapped > mem) md_page->min_address_mapped = mem;
 
   if (bmalloc_enable_printing) {
@@ -424,10 +439,11 @@ void _free_large(void *ptr) {
   mp->num_mappings_free++;
   metadata.num_mmap_metadata_free++;
 
-
   mp->min_address_mapped = (void *)-1ULL;
   mp->max_address_mapped = 0;
   for (uint32 i = 0; i < mp->num_mappings_free; i++) {
+    if (bmalloc_enable_printing)
+      printf("[U] _free_large: i: %d, free mappings: %x, mapping: %p\n", i, mp->num_mappings_free, ptr);
     if (!mp->mmap_mappings[i].is_valid) continue;
     if (mp->mmap_mappings[i].address < mp->min_address_mapped)
       mp->min_address_mapped = mp->mmap_mappings[i].address;
@@ -436,7 +452,6 @@ void _free_large(void *ptr) {
       mp->max_address_mapped =
         (void *)((uint64)mp->mmap_mappings[i].address + (uint64)mp->mmap_mappings[i].npages * PGSIZE);
   }
-
   munmap(mp->mmap_mappings[idx].address, mp->mmap_mappings[idx].npages * PGSIZE);
 }
 
@@ -456,21 +471,20 @@ void _buddy_free(void *ptr) {
     int is_left_buddy = ((uint64_t)PAGE_OFFSET(ptr) >> order) % 2 == 0;
     char *buddy_ptr   = (char *)ptr + (is_left_buddy ? (1 << order) : -(1 << order));
 
-    if (bmalloc_enable_printing) {
+    if (bmalloc_enable_printing)
       printf("freeing block %p (order %d), buddy is %p\n", ptr, order, buddy_ptr);
-    }
+
 
     if (is_block_marked(&mp->buddy_mappings[idx], buddy_ptr, order)) {
 
-      if (bmalloc_enable_printing) {
+      if (bmalloc_enable_printing)
         printf("buddy is marked, can not coalesce; adding ptr to freelist\n");
-      }
       free_list_push(order, ptr);
     } else {
 
-      if (bmalloc_enable_printing) { printf("buddy is not marked, coalescing\n"); }
-      //printf("coalesce push order=%d ptr=%x buddy_ptr=%x to freelist, ptr is %s\n", order + 1, ptr,
-      //  buddy_ptr, (is_left_buddy ? " left buddy" : "right buddy"));
+      if (bmalloc_enable_printing) printf("buddy is not marked, coalescing\n");
+      // printf("coalesce push order=%d ptr=%x buddy_ptr=%x to freelist, ptr is %s\n", order + 1, ptr,
+      // buddy_ptr, (is_left_buddy ? " left buddy" : "right buddy"));
       free_list_push(order + 1, is_left_buddy ? ptr : buddy_ptr);
     }
     break;
@@ -501,7 +515,10 @@ block block_alloc(uint32_t size, uint32_t align) {
     }
     return {0, 0, 0};
   }
-  if (size >= PGSIZE) { return {_malloc_large(size), ROUND_UP_TO_PAGE_SIZE(size), PGSIZE}; }
+  if (size >= PGSIZE) {
+    if (bmalloc_enable_printing) printf("[U] block_alloc: Allocating large size.\n");
+    return {_malloc_large(size), ROUND_UP_TO_PAGE_SIZE(size), PGSIZE};
+  }
 
   uint32_t order = ord_of_next_power_of_two(size);
 
