@@ -8,7 +8,7 @@
  */
 pagetable_t kernel_pagetable;
 
-extern char etext[]; // kernel.ld sets this to end of kernel code.
+extern char etext[];      // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
@@ -234,7 +234,8 @@ static uint64 find_va(pagetable_t pagetable, uint64 search_start, uint64 npages,
   return map_at;
 }
 
-uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 prefferered_addr, uint64 npages, int perm, int flags, struct inode *in) {
+uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 prefferered_addr,
+  uint64 npages, int perm, int flags, struct inode *in) {
 
   uint64 map_at = find_va(pagetable, prefferered_addr, npages, flags & (MAP_FIXED | MAP_FIXED_NOREPLACE));
   if (map_at == 0) {
@@ -242,18 +243,20 @@ uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 p
       for (int i = 0; i < npages; i++) {
         if (walkaddr(pagetable, prefferered_addr + i * PGSIZE)) {
           struct mmap_mapping_page *mp = mmapped;
-          while(mp) {
-            int found = 0;
-            //TODO: do it like in sys_munmap
-            for(uint32 j = 0; j < MMAP_MAPPING_PAGE_N; j++) {
-              if(mp->mappings[j].is_valid && mp->mappings[j].va == prefferered_addr + i * PGSIZE) {
+          int found                    = 0;
+          while (mp) {
+            for (uint32 j = 0; j < MMAP_MAPPING_PAGE_N; j++) {
+              if (mp->mappings[j].is_valid && mp->mappings[j].va == prefferered_addr + i * PGSIZE) {
                 uvmunmap(pagetable, prefferered_addr + i * PGSIZE, 1, mp->mappings[j].is_shared ? 0 : 1);
                 found = 1;
                 break;
               }
             }
-            if(found) break;
+            if (found) break;
             mp = mp->next;
+          }
+          if (!found) {
+            //TODO: What goes here?
           }
         }
       }
@@ -265,17 +268,17 @@ uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 p
   int clean_perm = PTE_U | ((perm & PROT_READ) ? PTE_R : 0) | ((perm & PROT_WRITE) ? PTE_W : 0) |
                    ((perm & PROT_EXEC) ? PTE_X : 0);
 
-  if(in != 0) {
-    for(uint32 i = 0; i < npages; i++) {
+  if (in != 0) {
+    for (uint32 i = 0; i < npages; i++) {
       uint32 dev_addr = bmap(in, i);
-      if(dev_addr == 0) {
+      if (dev_addr == 0) {
         printf("uvmmap: bmap failed\n");
         uvmunmap(pagetable, map_at, i, 0);
         return -1;
       }
       struct buf *buf = bread(in->dev, dev_addr);
       buf->refcnt++;
-      if(buf == 0) {
+      if (buf == 0) {
         printf("uvmmap: bread failed\n");
         uvmunmap(pagetable, map_at, i, 0);
         return -1;
