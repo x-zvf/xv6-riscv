@@ -8,8 +8,6 @@
 #include "user/bmalloc.h"
 
 void main() {
-  // TODO: See alloc-test-bpa!
-  assert(0==1);
   setup_malloc();
   for (int i = 4096; i < 1 << 16; i <<= 1) {
     void *ptr = malloc(i);

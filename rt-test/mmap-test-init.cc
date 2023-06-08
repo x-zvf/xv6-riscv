@@ -9,8 +9,6 @@
 #include <user/mmap.h>
 
 void main() {
-  // TODO: See alloc-test-bpa!
-  assert(0==1);
   for (int i = 1; i < 64; ++i) {
     auto size  = i * 4096;
     void *data = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

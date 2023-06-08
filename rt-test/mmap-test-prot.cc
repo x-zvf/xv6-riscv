@@ -14,8 +14,6 @@ void test(int prot) {
 }
 
 void main() {
-  // TODO: See alloc-test-bpa!
-  assert(0==1);
   test(PROT_EXEC);
   test(PROT_READ | PROT_WRITE | PROT_EXEC);
   test(PROT_READ);

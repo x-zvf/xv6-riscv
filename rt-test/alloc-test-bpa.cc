@@ -7,10 +7,6 @@
 #include "user/bmalloc.h"
 
 void main() {
-  // TODO: Find out, why sys_munmap fails here!
-  // TODO: Find out, why freewalk panics!
-  // assert(0==1);
-
   setup_balloc();
   for (int i = 4096; i < 1 << 16; i <<= 1) {
     auto block = block_alloc(i, 4096);

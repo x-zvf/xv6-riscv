@@ -9,8 +9,6 @@
 #include <user/mmap.h>
 
 void main() {
-  // TODO: See alloc-test-bpa!
-  assert(0==1);
   char *data = reinterpret_cast<char *>(
     mmap(0, 2 * PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   assert(!munmap(data + PAGE_SIZE, PAGE_SIZE));
