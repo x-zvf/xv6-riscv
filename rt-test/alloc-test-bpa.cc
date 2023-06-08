@@ -8,7 +8,7 @@
 
 void main() {
   setup_balloc();
-  for (int i = 4096; i < 1 << 16; ++i) {
+  for (int i = 4096; i < 1 << 16; i <<= 1) {
     auto block = block_alloc(i, 4096);
     assert(block.begin);
     assert(!(reinterpret_cast<uint64>(block.begin) & ((1 << 12) - 1)));

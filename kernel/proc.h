@@ -36,10 +36,10 @@ struct context {
 
 // Per-CPU state.
 struct cpu {
-  struct proc *proc;          // The process running on this cpu, or null.
-  struct context context;     // swtch() here to enter scheduler().
-  int noff;                   // Depth of push_off() nesting.
-  int intena;                 // Were interrupts enabled before push_off()?
+  struct proc *proc;      // The process running on this cpu, or null.
+  struct context context; // swtch() here to enter scheduler().
+  int noff;               // Depth of push_off() nesting.
+  int intena;             // Were interrupts enabled before push_off()?
 };
 
 extern struct cpu cpus[NCPU];
@@ -97,39 +97,43 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-
-struct mmap_file_mappings {
-    uint64 va;
-    int fd; //fd < 0 --> invalid mapping
+struct mmap_mapping {
+  uint64 va;
+  uint32 npages : 30;
+  uint8 is_valid : 1;
+  uint8 is_shared : 1;
 };
 
-#define NMAPPINGS 64
+#define MMAP_MAPPING_PAGE_N ((PGSIZE - sizeof(char *)) / sizeof(struct mmap_mapping))
+struct mmap_mapping_page {
+  struct mmap_mapping_page *next;
+  struct mmap_mapping mappings[MMAP_MAPPING_PAGE_N];
+};
 
 // Per-process state
 struct proc {
   struct spinlock lock;
 
   // p->lock must be held when using these:
-  enum procstate state;        // Process state
-  void *chan;                  // If non-zero, sleeping on chan
-  int killed;                  // If non-zero, have been killed
-  int xstate;                  // Exit status to be returned to parent's wait
-  int pid;                     // Process ID
+  enum procstate state; // Process state
+  void *chan;           // If non-zero, sleeping on chan
+  int killed;           // If non-zero, have been killed
+  int xstate;           // Exit status to be returned to parent's wait
+  int pid;              // Process ID
 
   // wait_lock must be held when using this:
-  struct proc *parent;         // Parent process
+  struct proc *parent; // Parent process
 
   // these are private to the process, so p->lock need not be held.
-  uint64 kstack;               // Virtual address of kernel stack
-  uint64 sz;                   // Size of process memory (bytes)
-  pagetable_t pagetable;       // User page table
-  uint64 max_mmaped;           // max mmaped address
-  struct mmap_file_mappings file_mappings[NMAPPINGS]; // maps virtual addresses to file descriptors
-  struct trapframe *trapframe; // data page for trampoline.S
-  struct context context;      // swtch() here to run process
-  struct file *ofile[NOFILE];  // Open files
-  struct inode *cwd;           // Current directory
-  char name[16];               // Process name (debugging)
+  uint64 kstack;                           // Virtual address of kernel stack
+  uint64 sz;                               // Size of process memory (bytes)
+  pagetable_t pagetable;                   // User page table
+  struct mmap_mapping_page *mmap_mappings; // mmap mappings
+  struct trapframe *trapframe;             // data page for trampoline.S
+  struct context context;                  // swtch() here to run process
+  struct file *ofile[NOFILE];              // Open files
+  struct inode *cwd;                       // Current directory
+  char name[16];                           // Process name (debugging)
 };
 
 

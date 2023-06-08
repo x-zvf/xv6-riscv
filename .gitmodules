@@ -1,0 +1,3 @@
+[submodule "benchmarks"]
+	path = shared
+	url = https://git.scc.kit.edu/itec-os/release/rxv6pp-benchmarks.git

@@ -19,7 +19,7 @@ void *mmap(void *addr, uint64 length, int prot, int flags, int fd, uint64 offset
 int munmap(void *addr, uint64 length);
 
 
-#define MAP_FAILED  ((void *) -1)
+#define MAP_FAILED ((void *)-1)
 
 // clang-format off
 #define PROT_NONE                 0x0
