@@ -99,7 +99,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 struct mmap_mapping {
   uint64 va;
-  uint32 npages : 32;
+  uint32 npages : 30;
   uint8 is_valid : 1;
   uint8 is_shared : 1;
 };
