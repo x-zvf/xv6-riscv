@@ -69,6 +69,17 @@ uint64 sys_uptime(void) {
   return xticks;
 }
 
+/**
+ * Helper function to sys_mmap and sys_munmap
+ * Fills the given mapping according to the remaining parameters.
+ */
+static void fill_mapping(struct mmap_mapping mapping, const uint64 npages, const uint64 va, const uint8 is_shared) {
+  mapping.is_valid  = 1;
+  mapping.npages    = npages;
+  mapping.va        = va;
+  mapping.is_shared = is_shared;
+}
+
 uint64 sys_mmap(void) {
   uint64 addr;
   int len, prot, flags, fildes, off;
@@ -143,13 +154,6 @@ uint64 sys_mmap(void) {
   fill_mapping(cpage->mappings[0], npages, ret_addr, fildes >= 0 ? 1 : 0);
 
   return ret_addr;
-}
-
-static void fill_mapping(struct mmap_mapping mapping, const uint64 npages, const uint64 va, const uint8 is_shared) {
-  mapping.is_valid  = 1;
-  mapping.npages    = npages;
-  mapping.va        = va;
-  mapping.is_shared = is_shared;
 }
 
 uint64 sys_munmap(void) {
