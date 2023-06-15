@@ -26,6 +26,7 @@ void test_align(void *ptr, int alignment) {
 }
 
 void main() {
+  term();
   for (int i = 1; i < 16; ++i) {
     auto malloced = malloc(i);
     assert(malloced);
