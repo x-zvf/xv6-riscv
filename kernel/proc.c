@@ -18,7 +18,7 @@ struct queue {
 
 #define MLFQ_QUEUES 5
 struct mlfq {
-  struct spinlock lock;
+  // struct spinlock lock;
   struct queue queues[MLFQ_QUEUES];
 } mlfq;
 
@@ -77,6 +77,8 @@ void mlfq_age() {
     for (int j = 0; j < queue->nitems ; j++) {
       uint64 queued_at;
       struct proc *proc = _mlfq_dequeue_nolock(i, &queued_at);
+      if(proc->state == UNUSED)
+        continue;
       if (ticks - queued_at > 2 * NPROC) {
         _mlfq_enqueue_nolock(proc, i - 1);
       } else {
@@ -189,7 +191,6 @@ static struct proc *allocproc(void) {
 found:
   p->pid   = allocpid();
   p->state = USED;
-  mlfq_enqueue(p, 0);
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -212,6 +213,7 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  mlfq_enqueue(p, 0);
   return p;
 }
 
@@ -231,6 +233,7 @@ static void freeproc(struct proc *p) {
   p->killed    = 0;
   p->xstate    = 0;
   p->state     = UNUSED;
+  mlfq_age();
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -509,7 +512,7 @@ void scheduler(void) {
 
     for(int i = 0; i < MLFQ_QUEUES; i++) {
       //printf("queue %d\n", i);
-      acquire(&mlfq.lock);
+      // acquire(&mlfq.lock);
       p = mlfq_dequeue(i, 0);
       if(p) {
         //printf("found process %d\n", p->pid);
@@ -523,9 +526,9 @@ void scheduler(void) {
           c->proc  = p;
 
           // printf("Process (%s, pid %d) is running\n", p->name, p->pid);
-          release(&mlfq.lock);
+          // release(&mlfq.lock);
           swtch(&c->context, &p->context);
-          acquire(&mlfq.lock);
+          // acquire(&mlfq.lock);
 
           // Process is done running for now.
           // printf("Process (%s, pid %d) is done running for now.\n", p->name, p->pid);
@@ -540,7 +543,7 @@ void scheduler(void) {
           }
           // procdump();
           c->proc = 0;
-          release(&mlfq.lock);
+          // release(&mlfq.lock);
           release(&p->lock);
           break;
         } else {
@@ -553,7 +556,7 @@ void scheduler(void) {
       } else {
         //printf("queue %d is empty\n", i);
       }
-      release(&mlfq.lock);
+      // release(&mlfq.lock);
     }
 
 
