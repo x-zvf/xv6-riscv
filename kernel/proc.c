@@ -6,6 +6,90 @@ struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
 
+
+struct queue {
+  struct spinlock lock;
+  struct proc *procs[NPROC];
+  uint64 queued_at_tick[NPROC];
+  uint32 nitems;
+  uint32 current_out_index;
+  uint32 current_in_index;
+};
+
+#define MLFQ_QUEUES 5
+struct mlfq {
+  struct spinlock lock;
+  struct queue queues[MLFQ_QUEUES];
+} mlfq;
+
+void mlfq_init(){
+  for(int i = 0; i < MLFQ_QUEUES; i++){
+    struct queue *queue = &mlfq.queues[i];
+    initlock(&queue->lock, "mlfq");
+    queue->current_out_index = 0;
+    queue->current_in_index = 0;
+  }
+}
+
+void _mlfq_enqueue_nolock(struct proc *proc, uint32 priority){
+  struct queue *queue = &mlfq.queues[priority];
+  if(queue->nitems >= NPROC)
+    panic("mlfq_enqueue: queue full");
+  queue->procs[queue->current_in_index] = proc;
+  queue->queued_at_tick[queue->current_in_index] = ticks;
+  queue->current_in_index = (queue->current_in_index + 1) % NPROC;
+  queue->nitems++;
+}
+void mlfq_enqueue(struct proc *proc, uint32 priority){
+  acquire(&mlfq.queues[priority].lock);
+  _mlfq_enqueue_nolock(proc, priority);
+  release(&mlfq.queues[priority].lock);
+}
+
+struct proc *_mlfq_dequeue_nolock(uint32 priority, uint64 *queued_at){
+  struct queue *queue = &mlfq.queues[priority];
+//printf("priority %d: queue->nitems=%d, queue->in=%d, queue->out=%d\n", priority, queue->nitems, queue->current_in_index, queue->current_out_index);
+  if(queue->nitems == 0)
+    return 0;
+  struct proc *proc = queue->procs[queue->current_out_index];
+  if(queued_at)
+    *queued_at = queue->queued_at_tick[queue->current_out_index];
+  queue->current_out_index = (queue->current_out_index + 1) % NPROC;
+  queue->nitems--;
+  
+  return proc;
+}
+struct proc *mlfq_dequeue(uint32 priority, uint64 *queued_at){
+  acquire(&mlfq.queues[priority].lock);
+  struct proc *proc = _mlfq_dequeue_nolock(priority, queued_at);
+  release(&mlfq.queues[priority].lock);
+  return proc;
+}
+
+void mlfq_age() {
+  // printf("aging\n");
+  for(int i = 0; i < MLFQ_QUEUES; i++)
+    acquire(&mlfq.queues[i].lock);
+  
+  for (int i = MLFQ_QUEUES - 1; i >= 0; i--) {
+    struct queue *queue = &mlfq.queues[i];
+    
+    for (int j = 0; j < queue->nitems ; j++) {
+      uint64 queued_at;
+      struct proc *proc = _mlfq_dequeue_nolock(i, &queued_at);
+      if (ticks - queued_at > 2 * NPROC) {
+        _mlfq_enqueue_nolock(proc, i - 1);
+      } else {
+        _mlfq_enqueue_nolock(proc, i);
+      }
+    }
+  }
+
+  for(int i = 0; i < MLFQ_QUEUES; i++)
+    release(&mlfq.queues[i].lock);
+}
+
+
 struct proc *initproc;
 
 int nextpid = 1;
@@ -105,6 +189,7 @@ static struct proc *allocproc(void) {
 found:
   p->pid   = allocpid();
   p->state = USED;
+  mlfq_enqueue(p, 0);
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -209,6 +294,8 @@ uchar initcode[] = {0x17, 0x05, 0x00, 0x00, 0x13, 0x05, 0x45, 0x02, 0x97, 0x05, 
 
 // Set up first user process.
 void userinit(void) {
+  mlfq_init();
+
   struct proc *p;
 
   p        = allocproc();
@@ -253,6 +340,8 @@ int fork(void) {
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
+
+  //printf("fork called from %d %s\n", p->pid, p->name);
 
   // Allocate process.
   if ((np = allocproc()) == 0) { return -1; }
@@ -406,11 +495,69 @@ void scheduler(void) {
   struct cpu *c = mycpu();
 
   c->proc = 0;
+
+  uint64 aged_at_tick = 0;
+
   for (;;) {
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
+    //printf("CPU %d: starting scheduler\n", cpuid());
+    if(ticks != aged_at_tick && ticks % 16 == 0) {
+      mlfq_age();
+      aged_at_tick = ticks;
+    }
 
-    for (p = proc; p < &proc[NPROC]; p++) {
+    for(int i = 0; i < MLFQ_QUEUES; i++) {
+      //printf("queue %d\n", i);
+      acquire(&mlfq.lock);
+      p = mlfq_dequeue(i, 0);
+      if(p) {
+        //printf("found process %d\n", p->pid);
+        acquire(&p->lock);
+        if (p->state == RUNNABLE) {
+          //printf("running process %d\n", p->pid);
+          // Switch to chosen process.  It is the process's job
+          // to release its lock and then reacquire it
+          // before jumping back to us.
+          p->state = RUNNING;
+          c->proc  = p;
+
+          // printf("Process (%s, pid %d) is running\n", p->name, p->pid);
+          release(&mlfq.lock);
+          swtch(&c->context, &p->context);
+          acquire(&mlfq.lock);
+
+          // Process is done running for now.
+          // printf("Process (%s, pid %d) is done running for now.\n", p->name, p->pid);
+          // It should have changed its p->state before coming back.
+
+          if(p->state == RUNNABLE) {
+            // printf("CPU-bound, enqueueing to queue %d\n", i + 1 < MLFQ_QUEUES ? i + 1 : i);
+            mlfq_enqueue(p, i + 1 < MLFQ_QUEUES ? i + 1 : i);
+          }else {
+            // printf("IO-bound, enqueueing to queue %d\n", i - 1 >= 0 ? i - 1 : i);
+            mlfq_enqueue(p, i - 1 >= 0 ? i - 1 : i);
+          }
+          // procdump();
+          c->proc = 0;
+          release(&mlfq.lock);
+          release(&p->lock);
+          break;
+        } else {
+          if(p->state != ZOMBIE){
+            mlfq_enqueue(p, i);
+          }
+          // printf("process %d is not runnable\n", p->pid);
+          release(&p->lock);
+        }
+      } else {
+        //printf("queue %d is empty\n", i);
+      }
+      release(&mlfq.lock);
+    }
+
+
+/*     for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if (p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
@@ -425,7 +572,7 @@ void scheduler(void) {
         c->proc = 0;
       }
       release(&p->lock);
-    }
+    }  */
   }
 }
 
@@ -598,6 +745,15 @@ void procdump(void) {
   char *state;
 
   printf("\n");
+  for(int i = 0; i < NCPU; i++) {
+    printf("CPU %d: ", i);
+    if (cpus[i].proc == 0) {
+      printf("idle\n");
+      continue;
+    }
+    p = cpus[i].proc;
+    printf(" pid: %d, name: %s, state: %s\n", p->pid, p->name, states[p->state]);
+  }
   for (p = proc; p < &proc[NPROC]; p++) {
     if (p->state == UNUSED) continue;
     if (p->state >= 0 && p->state < NELEM(states) && states[p->state])
@@ -605,6 +761,11 @@ void procdump(void) {
     else
       state = "???";
     printf("%d %s %s", p->pid, state, p->name);
+    printf("\n");
+  }
+  printf("MLFQ: \n");
+  for(int i = 0; i < MLFQ_QUEUES; i++) {
+    printf("Queue %d (%d items): ", i, mlfq.queues[i].nitems);
     printf("\n");
   }
 }
