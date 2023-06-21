@@ -22,44 +22,41 @@ struct mlfq {
   struct queue queues[MLFQ_QUEUES];
 } mlfq;
 
-void mlfq_init(){
-  for(int i = 0; i < MLFQ_QUEUES; i++){
+void mlfq_init() {
+  for (int i = 0; i < MLFQ_QUEUES; i++) {
     struct queue *queue = &mlfq.queues[i];
     initlock(&queue->lock, "mlfq");
     queue->current_out_index = 0;
-    queue->current_in_index = 0;
+    queue->current_in_index  = 0;
   }
 }
 
-void _mlfq_enqueue_nolock(struct proc *proc, uint32 priority){
+void _mlfq_enqueue_nolock(struct proc *proc, uint32 priority) {
   struct queue *queue = &mlfq.queues[priority];
-  if(queue->nitems >= NPROC)
-    panic("mlfq_enqueue: queue full");
-  queue->procs[queue->current_in_index] = proc;
+  if (queue->nitems >= NPROC) panic("mlfq_enqueue: queue full");
+  queue->procs[queue->current_in_index]          = proc;
   queue->queued_at_tick[queue->current_in_index] = ticks;
-  queue->current_in_index = (queue->current_in_index + 1) % NPROC;
+  queue->current_in_index                        = (queue->current_in_index + 1) % NPROC;
   queue->nitems++;
 }
-void mlfq_enqueue(struct proc *proc, uint32 priority){
+void mlfq_enqueue(struct proc *proc, uint32 priority) {
   acquire(&mlfq.queues[priority].lock);
   _mlfq_enqueue_nolock(proc, priority);
   release(&mlfq.queues[priority].lock);
 }
 
-struct proc *_mlfq_dequeue_nolock(uint32 priority, uint64 *queued_at){
+struct proc *_mlfq_dequeue_nolock(uint32 priority, uint64 *queued_at) {
   struct queue *queue = &mlfq.queues[priority];
-//printf("priority %d: queue->nitems=%d, queue->in=%d, queue->out=%d\n", priority, queue->nitems, queue->current_in_index, queue->current_out_index);
-  if(queue->nitems == 0)
-    return 0;
+  //printf("priority %d: queue->nitems=%d, queue->in=%d, queue->out=%d\n", priority, queue->nitems, queue->current_in_index, queue->current_out_index);
+  if (queue->nitems == 0) return 0;
   struct proc *proc = queue->procs[queue->current_out_index];
-  if(queued_at)
-    *queued_at = queue->queued_at_tick[queue->current_out_index];
+  if (queued_at) *queued_at = queue->queued_at_tick[queue->current_out_index];
   queue->current_out_index = (queue->current_out_index + 1) % NPROC;
   queue->nitems--;
-  
+
   return proc;
 }
-struct proc *mlfq_dequeue(uint32 priority, uint64 *queued_at){
+struct proc *mlfq_dequeue(uint32 priority, uint64 *queued_at) {
   acquire(&mlfq.queues[priority].lock);
   struct proc *proc = _mlfq_dequeue_nolock(priority, queued_at);
   release(&mlfq.queues[priority].lock);
@@ -68,17 +65,15 @@ struct proc *mlfq_dequeue(uint32 priority, uint64 *queued_at){
 
 void mlfq_age() {
   // printf("aging\n");
-  for(int i = 0; i < MLFQ_QUEUES; i++)
-    acquire(&mlfq.queues[i].lock);
-  
+  for (int i = 0; i < MLFQ_QUEUES; i++) acquire(&mlfq.queues[i].lock);
+
   for (int i = MLFQ_QUEUES - 1; i >= 0; i--) {
     struct queue *queue = &mlfq.queues[i];
-    
-    for (int j = 0; j < queue->nitems ; j++) {
+
+    for (int j = 0; j < queue->nitems; j++) {
       uint64 queued_at;
       struct proc *proc = _mlfq_dequeue_nolock(i, &queued_at);
-      if(proc->state == UNUSED)
-        continue;
+      if (proc->state == UNUSED) continue;
       if (ticks - queued_at > 2 * NPROC) {
         _mlfq_enqueue_nolock(proc, i - 1);
       } else {
@@ -87,8 +82,7 @@ void mlfq_age() {
     }
   }
 
-  for(int i = 0; i < MLFQ_QUEUES; i++)
-    release(&mlfq.queues[i].lock);
+  for (int i = 0; i < MLFQ_QUEUES; i++) release(&mlfq.queues[i].lock);
 }
 
 
@@ -271,11 +265,11 @@ void proc_freepagetable(pagetable_t pagetable, uint64 sz, struct mmap_mapping_pa
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
 
-  while(mmaped != 0) {
-    for(uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
-      if(mmaped->mappings[i].is_valid != 0) {
-        for(uint32 i = 0; i < mmaped->mappings[i].npages; i++) {
-          if(walkaddr(pagetable, mmaped->mappings[i].va + i * PGSIZE) != 0) {
+  while (mmaped != 0) {
+    for (uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
+      if (mmaped->mappings[i].is_valid != 0) {
+        for (uint32 i = 0; i < mmaped->mappings[i].npages; i++) {
+          if (walkaddr(pagetable, mmaped->mappings[i].va + i * PGSIZE) != 0) {
             uvmunmap(pagetable, mmaped->mappings[i].va + i * PGSIZE, 1, mmaped->mappings[i].is_shared == 1);
           }
         }
@@ -505,16 +499,16 @@ void scheduler(void) {
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     //printf("CPU %d: starting scheduler\n", cpuid());
-    if(ticks != aged_at_tick && ticks % 16 == 0) {
+    if (ticks != aged_at_tick && ticks % 16 == 0) {
       mlfq_age();
       aged_at_tick = ticks;
     }
 
-    for(int i = 0; i < MLFQ_QUEUES; i++) {
+    for (int i = 0; i < MLFQ_QUEUES; i++) {
       //printf("queue %d\n", i);
       // acquire(&mlfq.lock);
       p = mlfq_dequeue(i, 0);
-      if(p) {
+      if (p) {
         //printf("found process %d\n", p->pid);
         acquire(&p->lock);
         if (p->state == RUNNABLE) {
@@ -534,10 +528,10 @@ void scheduler(void) {
           // printf("Process (%s, pid %d) is done running for now.\n", p->name, p->pid);
           // It should have changed its p->state before coming back.
 
-          if(p->state == RUNNABLE) {
+          if (p->state == RUNNABLE) {
             // printf("CPU-bound, enqueueing to queue %d\n", i + 1 < MLFQ_QUEUES ? i + 1 : i);
             mlfq_enqueue(p, i + 1 < MLFQ_QUEUES ? i + 1 : i);
-          }else {
+          } else {
             // printf("IO-bound, enqueueing to queue %d\n", i - 1 >= 0 ? i - 1 : i);
             mlfq_enqueue(p, i - 1 >= 0 ? i - 1 : i);
           }
@@ -547,9 +541,7 @@ void scheduler(void) {
           release(&p->lock);
           break;
         } else {
-          if(p->state != ZOMBIE){
-            mlfq_enqueue(p, i);
-          }
+          if (p->state != ZOMBIE) { mlfq_enqueue(p, i); }
           // printf("process %d is not runnable\n", p->pid);
           release(&p->lock);
         }
@@ -560,7 +552,7 @@ void scheduler(void) {
     }
 
 
-/*     for (p = proc; p < &proc[NPROC]; p++) {
+    /*     for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if (p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
@@ -748,7 +740,7 @@ void procdump(void) {
   char *state;
 
   printf("\n");
-  for(int i = 0; i < NCPU; i++) {
+  for (int i = 0; i < NCPU; i++) {
     printf("CPU %d: ", i);
     if (cpus[i].proc == 0) {
       printf("idle\n");
@@ -767,7 +759,7 @@ void procdump(void) {
     printf("\n");
   }
   printf("MLFQ: \n");
-  for(int i = 0; i < MLFQ_QUEUES; i++) {
+  for (int i = 0; i < MLFQ_QUEUES; i++) {
     printf("Queue %d (%d items): ", i, mlfq.queues[i].nitems);
     printf("\n");
   }

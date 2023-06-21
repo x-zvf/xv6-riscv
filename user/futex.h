@@ -34,10 +34,10 @@ typedef struct osdev_mutex_t osdev_mutex_t;
  * \brief wrap object to (hopefully) be ABI compatible
  */
 struct osdev_mutex_t {
-    //! an atomic counter
-    osdev_mutex_inner_t inner;
+  //! an atomic counter
+  osdev_mutex_inner_t inner;
 
-    //! \attention you can add more stuff here if you want
+  //! \attention you can add more stuff here if you want
 };
 
 //! initialize mutex

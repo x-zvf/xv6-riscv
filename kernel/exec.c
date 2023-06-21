@@ -17,9 +17,9 @@ int exec(char *path, char **argv) {
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
-  pagetable_t pagetable = 0, oldpagetable;
+  pagetable_t pagetable                       = 0, oldpagetable;
   struct mmap_mapping_page *mmap_mapping_page = 0;
-  struct proc *p        = myproc();
+  struct proc *p                              = myproc();
 
   begin_op();
 
@@ -56,7 +56,7 @@ int exec(char *path, char **argv) {
   uint64 oldsz = p->sz;
 
   mmap_mapping_page = p->mmap_mappings;
-  p->mmap_mappings                   = 0;
+  p->mmap_mappings  = 0;
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible as a stack guard.
   // Use the second as the user stack.
