@@ -20,6 +20,13 @@ void trapinithart(void) {
   w_stvec((uint64)kernelvec);
 }
 
+char *scl[] = {"Instruction address misaligned", "Instruction access fault", "Illegal instruction",
+  "Load access fault", "Breakpoint", "Load address misaligned", "Store/AMO address misaligned",
+  "Store/AMO access fault", "Environment call from U-mode", "Environment call from S-mode",
+  "10 - Reserved", "Environment call from M-mode", "Instruction page fault", "Load page fault",
+  "14 - Reserved", "Store/AMO page fault"};
+
+
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
@@ -57,6 +64,7 @@ void usertrap(void) {
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    printf("            [%s]\n", scl[r_scause()]);
     setkilled(p);
   }
 
@@ -88,7 +96,7 @@ void usertrapret(void) {
   p->trapframe->kernel_satp   = r_satp();           // kernel page table
   p->trapframe->kernel_sp     = p->kstack + PGSIZE; // process's kernel stack
   p->trapframe->kernel_trap   = (uint64)usertrap;
-  p->trapframe->kernel_hartid = r_tp(); // hartid for cpuid()
+  p->trapframe->kernel_hartid = r_tp();             // hartid for cpuid()
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
