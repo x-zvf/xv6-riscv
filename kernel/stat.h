@@ -5,11 +5,11 @@
 #ifndef INCLUDED_kernel_stat_h
 #define INCLUDED_kernel_stat_h
 
+#include "kernel/types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/types.h"
 
 
 #define T_DIR     1   // Directory

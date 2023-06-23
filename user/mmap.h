@@ -5,11 +5,12 @@
 #ifndef INCLUDED_user_mmap_h
 #define INCLUDED_user_mmap_h
 
+#include "user/user.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "user/user.h"
 
 #define PAGE_SIZE 4096
 

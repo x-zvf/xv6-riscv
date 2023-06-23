@@ -7,13 +7,13 @@
 #ifndef INCLUDED_kernel_defs_h
 #define INCLUDED_kernel_defs_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "kernel/file.h"
 #include "kernel/proc.h"
 #include "kernel/stat.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 // start.c

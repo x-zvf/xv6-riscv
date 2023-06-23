@@ -5,11 +5,11 @@
 #ifndef INCLUDED_user_bmalloc_h
 #define INCLUDED_user_bmalloc_h
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
 
 /*!
  * \brief block allocator struct

@@ -6,11 +6,11 @@
 #ifndef INCLUDED_kernel_fs_h
 #define INCLUDED_kernel_fs_h
 
+#include "kernel/types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/types.h"
 
 #define ROOTINO  1   // root i-number
 #define BSIZE 1024  // block size

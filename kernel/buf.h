@@ -5,12 +5,12 @@
 #ifndef INCLUDED_kernel_buf_h
 #define INCLUDED_kernel_buf_h
 
+#include "kernel/sleeplock.h"
+#include "kernel/fs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/sleeplock.h"
-#include "kernel/fs.h"
 
 struct buf {
   int valid;   // has data been read from disk?

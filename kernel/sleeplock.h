@@ -6,11 +6,11 @@
 #ifndef INCLUDED_kernel_sleeplock_h
 #define INCLUDED_kernel_sleeplock_h
 
+#include "kernel/spinlock.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/spinlock.h"
 
 // Long-term locks for processes
 struct sleeplock {

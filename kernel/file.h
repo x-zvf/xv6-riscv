@@ -5,12 +5,12 @@
 #ifndef INCLUDED_kernel_file_h
 #define INCLUDED_kernel_file_h
 
+#include "kernel/sleeplock.h"
+#include "kernel/fs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/sleeplock.h"
-#include "kernel/fs.h"
 
 struct file {
   enum { FD_NONE, FD_PIPE, FD_INODE, FD_DEVICE } type;
