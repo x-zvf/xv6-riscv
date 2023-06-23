@@ -6,11 +6,11 @@
 #ifndef INCLUDED_rt_test_assert_h
 #define INCLUDED_rt_test_assert_h
 
+#include "user/user.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "user/user.h"
 
 #define assert(assertion)                                                                          \
   do {                                                                                             \
