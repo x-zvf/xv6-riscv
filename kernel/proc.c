@@ -351,6 +351,44 @@ int fork(void) {
   }
   np->sz = p->sz;
 
+
+  // Copy mmaped pages from parent to child.
+  struct mmap_mapping_page *mmaped = p->mmap_mappings;
+  struct mmap_mapping_page *np_mmaped = 0;
+  struct mmap_mapping_page *np_prev = 0;
+  if(mmaped) {
+    np_mmaped = kalloc();
+    np->mmap_mappings = np_mmaped;
+    np->mmap_mappings->next = 0;
+  }
+  while(mmaped) {
+    memmove(np->mmap_mappings, mmaped, sizeof(struct mmap_mapping_page));
+    if(np_mmaped == 0) {
+      np_mmaped = kalloc();
+      memmove(np_mmaped, mmaped, sizeof(struct mmap_mapping_page));
+      np_mmaped->next = 0;
+      np_prev->next = np_mmaped;
+    }
+    for(uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
+      if(!mmaped->mappings[i].is_valid) continue;
+      // printf("fork: copying mapping %d @ %p\n", i, mmaped->mappings[i].va);
+      int perm = *walk(p->pagetable, mmaped->mappings[i].va, 0) & 0b11111;
+      for(uint32 j = 0; j < mmaped->mappings[i].npages; j++) {
+        uint64 va = mmaped->mappings[i].va + j * PGSIZE;
+        uint64 pa = walkaddr(p->pagetable, va);
+        if(pa == 0) {
+          panic("fork: pa is 0");
+        }
+        if(mappages(np->pagetable, va, PGSIZE, pa, perm) != 0) {
+          panic("fork: mappages");
+        }
+      }
+    }
+    mmaped = mmaped->next;
+    np_prev = np_mmaped; 
+    np_mmaped = np_mmaped->next;
+  }
+
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
