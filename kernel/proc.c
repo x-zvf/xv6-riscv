@@ -268,9 +268,13 @@ void proc_freepagetable(pagetable_t pagetable, uint64 sz, struct mmap_mapping_pa
   while (mmaped != 0) {
     for (uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
       if (mmaped->mappings[i].is_valid != 0) {
-        for (uint32 i = 0; i < mmaped->mappings[i].npages; i++) {
-          if (walkaddr(pagetable, mmaped->mappings[i].va + i * PGSIZE) != 0) {
-            uvmunmap(pagetable, mmaped->mappings[i].va + i * PGSIZE, 1, mmaped->mappings[i].is_shared == 1);
+        // printf("Found valid mapping: %p, %d pages\n", mmaped->mappings[i].va, mmaped->mappings[i].npages);
+        for (uint32 j = 0; j < mmaped->mappings[i].npages; j++) {
+          // printf("checking va=%p\n", mmaped->mappings[i].va + j * PGSIZE);
+          if (walkaddr(pagetable, mmaped->mappings[i].va + j * PGSIZE) != 0) {
+            // printf("unmapping page.");
+            uvmunmap(pagetable, mmaped->mappings[i].va + j * PGSIZE, 1, mmaped->mappings[i].is_shared == 1);
+            // printf("unmapped page.");
           }
         }
       }
