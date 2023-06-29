@@ -401,7 +401,7 @@ static void *_malloc_large(uint32_t size) {
     // printf("cache miss\n");
     mem = mmap(0, npages * PGSIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   }
-  if (mem == 0) return 0;
+  if (mem == 0 || mem == (void *)-1ULL) return 0;
 
   uint32 idx                    = -1U;
   struct metadata_page *md_page = get_or_allocate_metadata_page(&idx, IS_MMAP);
