@@ -82,6 +82,10 @@ struct metadata_page {
 #define PAGE_BASE(ptr) ((void *)((uint64_t)ptr & ~(PGSIZE - 1)))
 #define PAGE_OFFSET(ptr) ((void *)((uint64_t)ptr & (PGSIZE - 1)))
 
+struct page_cache {
+  uint32_t npages;
+};
+
 struct malloc_metadata {
   struct metadata_page *first_buddy_metadata_page; //for lookup
   struct metadata_page *last_buddy_metadata_page;  //for appending a new segment
@@ -93,6 +97,8 @@ struct malloc_metadata {
 
   void *buddy_free_lists[NUM_FREE_LISTS];
   void *end_of_sbrk_segment;
+
+  struct page_cache *empty_page_cache;
 };
 
 #ifndef __cplusplus

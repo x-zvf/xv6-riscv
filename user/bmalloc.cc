@@ -378,7 +378,29 @@ static void *_malloc_large(uint32_t size) {
   if (bmalloc_enable_printing) {
     printf("[U] _malloc_large allocating %d bytes (%d pages)\n", size, npages);
   }
-  void *mem = mmap(0, npages * PGSIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+  void *mem;
+  if (metadata.empty_page_cache != 0 && metadata.empty_page_cache->npages == npages) {
+    // printf("exact cache hit\n");
+    mem = metadata.empty_page_cache;
+    memset(mem, 0, npages * PGSIZE);
+    metadata.empty_page_cache = 0;
+  } else if (metadata.empty_page_cache != 0 && metadata.empty_page_cache->npages >= npages) {
+    // printf("cache hit\n");
+    mem               = metadata.empty_page_cache;
+    uint32 pages_left = metadata.empty_page_cache->npages - npages;
+    memset(mem, 0, npages * PGSIZE);
+    metadata.empty_page_cache = (struct page_cache *)((uint64)metadata.empty_page_cache + npages * PGSIZE);
+    metadata.empty_page_cache->npages = pages_left;
+  } else if (metadata.empty_page_cache != 0) {
+    // printf("cache miss. Purging.\n");
+    munmap(metadata.empty_page_cache, metadata.empty_page_cache->npages * PGSIZE);
+    metadata.empty_page_cache = 0;
+    mem = mmap(0, npages * PGSIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+  } else {
+    // printf("cache miss\n");
+    mem = mmap(0, npages * PGSIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+  }
   if (mem == 0) return 0;
 
   uint32 idx                    = -1U;
@@ -452,7 +474,15 @@ void _free_large(void *ptr) {
       mp->max_address_mapped =
         (void *)((uint64)mp->mmap_mappings[i].address + (uint64)mp->mmap_mappings[i].npages * PGSIZE);
   }
-  munmap(mp->mmap_mappings[idx].address, mp->mmap_mappings[idx].npages * PGSIZE);
+  if (metadata.empty_page_cache != 0 && metadata.empty_page_cache->npages > mp->mmap_mappings[idx].npages) {
+    munmap(mp->mmap_mappings[idx].address, mp->mmap_mappings[idx].npages * PGSIZE);
+  } else {
+    if (metadata.empty_page_cache != 0) {
+      munmap(metadata.empty_page_cache, metadata.empty_page_cache->npages * PGSIZE);
+    }
+    metadata.empty_page_cache         = (struct page_cache *)mp->mmap_mappings[idx].address;
+    metadata.empty_page_cache->npages = mp->mmap_mappings[idx].npages;
+  }
 }
 
 
@@ -552,6 +582,7 @@ void setup_malloc() {
   metadata.last_buddy_metadata_page  = 0;
   metadata.first_mmap_metadata_page  = 0;
   metadata.last_mmap_metadata_page   = 0;
+  metadata.empty_page_cache          = 0;
 
   if (bmalloc_enable_printing) {}
 }
