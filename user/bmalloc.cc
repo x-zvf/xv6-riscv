@@ -452,6 +452,7 @@ void *malloc(uint32_t size) {
 void _free_large(void *ptr) {
   uint32 idx;
   struct metadata_page *mp = find_mmap_page_metadata(&idx, ptr);
+  // printf("     _free_large: ptr=%p mp: %p, idx: %d\n", ptr, mp, idx);
 
   if (mp == 0) {
     printf("     DID NOT FIND PM FOR %p\n", ptr);
@@ -464,8 +465,8 @@ void _free_large(void *ptr) {
   mp->min_address_mapped = (void *)-1ULL;
   mp->max_address_mapped = 0;
   for (uint32 i = 0; i < mp->num_mappings_free; i++) {
-    if (bmalloc_enable_printing)
-      printf("[U] _free_large: i: %d, free mappings: %x, mapping: %p\n", i, mp->num_mappings_free, ptr);
+    // if (bmalloc_enable_printing)
+    //   printf("[U] _free_large: i: %d, free mappings: %x, mapping: %p\n", i, mp->num_mappings_free, ptr);
     if (!mp->mmap_mappings[i].is_valid) continue;
     if (mp->mmap_mappings[i].address < mp->min_address_mapped)
       mp->min_address_mapped = mp->mmap_mappings[i].address;
