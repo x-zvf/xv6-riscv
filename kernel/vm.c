@@ -256,7 +256,7 @@ uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 p
             mp = mp->next;
           }
           if (!found) {
-            //TODO: What goes here?
+            panic("uvmmap: MAP_FIXED failed, but no mapping was found\n");
           }
         }
       }

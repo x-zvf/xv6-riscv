@@ -129,6 +129,7 @@ struct proc {
   uint64 sz;                               // Size of process memory (bytes)
   pagetable_t pagetable;                   // User page table
   struct mmap_mapping_page *mmap_mappings; // mmap mappings
+  uint64 last_mmap_location;               // last mmap location
   struct trapframe *trapframe;             // data page for trampoline.S
   struct context context;                  // swtch() here to run process
   struct file *ofile[NOFILE];              // Open files

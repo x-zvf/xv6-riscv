@@ -123,7 +123,9 @@ uint64 sys_mmap(void) {
       return -1;
     }
   }
-  uint64 start_va = addr > MMAP_BASE ? addr : MMAP_BASE;
+  uint64 start_va = addr > MMAP_BASE ? addr : 
+     (p->last_mmap_location > 0 && p->last_mmap_location >= MMAP_BASE && p->last_mmap_location < MAXVA ?
+      p->last_mmap_location : MMAP_BASE);
 
   uint64 ret_addr = uvmmap(p->pagetable, p->mmap_mappings, start_va, npages, prot, flags, in);
   // printf("[K] sys_mmap: uvmmap ret addr %p\n", ret_addr);
@@ -135,6 +137,8 @@ uint64 sys_mmap(void) {
   }
   struct mmap_mapping_page *cpage = p->mmap_mappings;
   struct mmap_mapping_page *prev  = 0;
+
+  p->last_mmap_location = ret_addr + len;
 
   // Look for an fitting place to put the mapping
   while (cpage != 0) {
