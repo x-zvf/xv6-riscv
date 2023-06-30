@@ -5,6 +5,8 @@
 #ifndef INCLUDED_user_user_h
 #define INCLUDED_user_user_h
 
+#include "kernel/stat.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

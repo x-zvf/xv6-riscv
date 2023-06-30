@@ -5,11 +5,11 @@
 #ifndef INCLUDED_kernel_virtio_h
 #define INCLUDED_kernel_virtio_h
 
+#include "kernel/types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/types.h"
 
 
 //

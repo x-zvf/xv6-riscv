@@ -5,11 +5,11 @@
 #ifndef INCLUDED_kernel_riscv_h
 #define INCLUDED_kernel_riscv_h
 
+#include "kernel/types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "kernel/types.h"
 
 #ifndef __ASSEMBLER__
 

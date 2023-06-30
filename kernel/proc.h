@@ -5,13 +5,13 @@
 #ifndef INCLUDED_kernel_proc_h
 #define INCLUDED_kernel_proc_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "kernel/riscv.h"
 #include "kernel/param.h"
 #include "kernel/spinlock.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 // Saved registers for kernel context switches.
