@@ -61,17 +61,25 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 ASFLAGS += -I.
 
+SANIFLAGS :=
+ifdef SANITIZE
+SANIFLAGS += -fsanitize=address
+#SANIFLAGS += -fsanitize=undefined
+endif
+
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
 CFLAGS += -I.
+CFLAGS += $(SANIFLAGS)
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 
 CXXFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
 CXXFLAGS += -MD
 CXXFLAGS += -mcmodel=medany
 CXXFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
+CXXFLAGS += $(SANIFLAGS)
 CXXFLAGS += -I.
 CXXFLAGS += $(shell $(CXX) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 
