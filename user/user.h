@@ -14,7 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include "kernel/stat.h"
 #include "kernel/riscv.h"
-
+#include "user/sanitize.h"
 
 #define NULL ((void *)0)
 
@@ -62,8 +62,6 @@ void free(void *);
 int atoi(const char *);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
-
-
 
 #ifdef __cplusplus
 }
