@@ -156,6 +156,7 @@ UPROGS=\
 	$U/_malloc_test\
 	$U/_malloc_test_cxx\
 	$U/_terminate\
+	$U/_traceme
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
