@@ -79,6 +79,7 @@ extern uint64 sys_cxx(void);
 extern uint64 sys_term(void);
 extern uint64 sys_mmap(void);
 extern uint64 sys_munmap(void);
+extern uint64 sys_backtrace(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -108,6 +109,7 @@ static uint64 (*syscalls[])(void) = {
   [SYS_term] sys_term,
   [SYS_mmap] sys_mmap,
   [SYS_munmap] sys_munmap,
+  [SYS_backtrace] sys_backtrace,
 };
 
 void syscall(void) {

@@ -35,6 +35,9 @@ void consputc(int);
 // exec.c
 int exec(char *, char **);
 
+//debug.c
+void proc_backtrace(struct proc *p);
+
 // file.c
 struct file *filealloc(void);
 void fileclose(struct file *);

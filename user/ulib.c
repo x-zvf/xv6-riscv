@@ -5,6 +5,8 @@
 // wrapper so that it's OK if main() does not call exit().
 //
 void _main() {
+  // set stackframe pointer to invalid value, to signal the top most stackframe
+  asm volatile("addi fp, zero, -1");
   extern int main();
   main();
   exit(0);

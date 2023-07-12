@@ -40,4 +40,4 @@ entry("cxx");
 entry("term");
 entry("mmap");
 entry("munmap");
-
+entry("backtrace");

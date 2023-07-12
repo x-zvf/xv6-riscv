@@ -253,3 +253,9 @@ uint64 sys_munmap(void) {
   // printf("[K] sys_munmap: unmapped addr=%p npages=%d\n", addr, npages);
   return 0;
 }
+
+uint64 sys_backtrace(void) {
+  struct proc *p = myproc();
+  proc_backtrace(p);
+  return 0;
+}
