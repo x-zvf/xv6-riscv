@@ -36,6 +36,15 @@ int exec(char *path, char **argv) {
 
   if ((pagetable = proc_pagetable(p)) == 0) goto bad;
 
+  uint64 min_segment = 0xffffffffffffffff;
+  for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
+    if (readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)) goto bad;
+    if (ph.type != ELF_PROG_LOAD) continue;
+    if (ph.vaddr % PGSIZE != 0) goto bad;
+    if (ph.vaddr < min_segment) min_segment = ph.vaddr;
+  }
+  sz = min_segment;
+
   // Load program into memory.
   for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
     if (readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)) goto bad;
@@ -52,8 +61,9 @@ int exec(char *path, char **argv) {
   end_op();
   ip = 0;
 
-  p            = myproc();
-  uint64 oldsz = p->sz;
+  p              = myproc();
+  uint64 oldsz   = p->sz;
+  uint64 oldbase = p->base;
 
   mmap_mapping_page = p->mmap_mappings;
   p->mmap_mappings  = 0;
@@ -99,14 +109,15 @@ int exec(char *path, char **argv) {
   oldpagetable      = p->pagetable;
   p->pagetable      = pagetable;
   p->sz             = sz;
+  p->base           = min_segment;
   p->trapframe->epc = elf.entry; // initial program counter = main
   p->trapframe->sp  = sp;        // initial stack pointer
-  proc_freepagetable(oldpagetable, oldsz, mmap_mapping_page);
+  proc_freepagetable(oldpagetable, oldbase, oldsz, mmap_mapping_page);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
-  if (pagetable) proc_freepagetable(pagetable, sz, mmap_mapping_page);
+  if (pagetable) proc_freepagetable(pagetable, p->base, sz, mmap_mapping_page);
   if (ip) {
     iunlockput(ip);
     end_op();
