@@ -78,3 +78,11 @@ int strlen(const char *s) {
     ;
   return n;
 }
+
+char *strrchr(const char *s, int c) {
+  const char *res = NULL;
+  for (uint i = 0; s[i]; i++) {
+    if (s[i] == c) res = s + i;
+  }
+  return (char *)res;
+}
