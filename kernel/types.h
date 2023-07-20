@@ -23,8 +23,8 @@ typedef unsigned long uint64;
 
 typedef uint64 pde_t;
 
-#ifndef bool
-typedef uint8 bool;
+#ifndef __cplusplus
+typedef unsigned char bool;
 #endif
 
 #ifndef true
@@ -34,6 +34,9 @@ typedef uint8 bool;
 #ifndef false
 #define false 0
 #endif
+
+typedef unsigned long uptr;
+typedef signed long sptr;
 
 #ifdef __cplusplus
 }
