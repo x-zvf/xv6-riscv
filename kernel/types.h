@@ -11,6 +11,9 @@
 extern "C" {
 #endif
 
+#ifndef NULL
+#define NULL 0
+#endif
 
 typedef unsigned int uint;
 typedef unsigned short ushort;
