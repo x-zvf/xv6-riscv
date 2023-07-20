@@ -4,6 +4,7 @@ U=user
 OBJS = \
   $K/entry.o \
   $K/start.o \
+  $K/asan.o \
   $K/console.o \
   $K/printf.o \
   $K/uart.o \
@@ -31,7 +32,6 @@ OBJS = \
   $K/virtio_disk.o  \
   $K/cxxtest.o \
   $K/terminate.o \
-  $K/sanitize.o \
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
