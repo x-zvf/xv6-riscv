@@ -27,10 +27,10 @@ void __asan_handle_no_return(uint64 address) {
   exit(-2);
 }
 
-void __asan_option_detect_stack_use_after_return(uint64 address) {
+/*void __asan_option_detect_stack_use_after_return(uint64 address) {
   printf("__asan_option_detect_stack_use_after_return");
   exit(-2);
-}
+}*/
 
 #undef ADDRESS_SANITIZER_LOAD_STORE
 #define ADDRESS_SANITIZER_LOAD_STORE(size)                                                         \

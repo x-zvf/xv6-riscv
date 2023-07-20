@@ -13,7 +13,6 @@ void __asan_unregister_globals(uint64);
 
 void __asan_handle_no_return(uint64);
 
-void __asan_option_detect_stack_use_after_return(uint64);
 
 #define ADDRESS_SANITIZER_LOAD_STORE(size)                                                         \
   void __asan_report_load##size(uint64);                                                           \
