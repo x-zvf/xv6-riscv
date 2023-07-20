@@ -14,7 +14,6 @@ extern "C" {
 #include <stdint.h>
 #include "kernel/stat.h"
 #include "kernel/riscv.h"
-#include "user/sanitize.h"
 
 #ifndef NULL
 #define NULL ((void *)0)
