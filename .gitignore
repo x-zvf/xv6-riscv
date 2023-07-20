@@ -19,3 +19,5 @@ user/usys.S
 .idea/
 devenv.sh
 libsanitizer
+.gitignore
+.vscode/
