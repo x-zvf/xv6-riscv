@@ -15,6 +15,7 @@
 extern "C" {
 #endif
 
+#define NULL 0
 
 // start.c
 void timerhalt(void);
