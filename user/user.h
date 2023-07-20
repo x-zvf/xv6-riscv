@@ -16,7 +16,9 @@ extern "C" {
 #include "kernel/riscv.h"
 #include "user/sanitize.h"
 
+#ifndef NULL
 #define NULL ((void *)0)
+#endif
 
 
 // system calls
