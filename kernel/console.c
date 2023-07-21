@@ -157,8 +157,7 @@ void consoleintr(int c) {
 
   release(&cons.lock);
 }
-
-void consoleinit(void) {
+__attribute__((no_sanitize("address"))) void consoleinit(void) {
   initlock(&cons.lock, "cons");
 
   uartinit();
