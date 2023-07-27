@@ -55,7 +55,7 @@ void start() {
 // at timervec in kernelvec.S,
 // which turns them into software interrupts for
 // devintr() in trap.c.
-__attribute__((no_sanitize("address"))) void timerinit() {
+void timerinit() {
   // each CPU has a separate source of timer interrupts.
   int id = r_mhartid();
 

@@ -11,9 +11,6 @@
 extern "C" {
 #endif
 
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
 
 typedef unsigned int uint;
 typedef unsigned short ushort;
@@ -26,20 +23,7 @@ typedef unsigned long uint64;
 
 typedef uint64 pde_t;
 
-#ifndef __cplusplus
-typedef unsigned char bool;
-#endif
 
-#ifndef true
-#define true 1
-#endif
-
-#ifndef false
-#define false 0
-#endif
-
-typedef unsigned long uptr;
-typedef signed long sptr;
 
 #ifdef __cplusplus
 }

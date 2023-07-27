@@ -44,7 +44,7 @@ static void printptr(uint64 x) {
 }
 
 // Print to the console. only understands %d, %x, %p, %s.
-__attribute__((no_sanitize("address"))) void printf(char *fmt, ...) {
+void printf(char *fmt, ...) {
   va_list ap;
   int i, c, locking;
   char *s;

@@ -146,7 +146,7 @@ struct cpu *mycpu(void) {
 }
 
 // Return the current struct proc *, or zero if none.
-__attribute__((no_sanitize("address"))) struct proc *myproc(void) {
+struct proc *myproc(void) {
   push_off();
   struct cpu *c  = mycpu();
   struct proc *p = c->proc;
@@ -183,8 +183,8 @@ static struct proc *allocproc(void) {
   return 0;
 
 found:
-  p->pid                = allocpid();
-  p->state              = USED;
+  p->pid   = allocpid();
+  p->state = USED;
   p->last_mmap_location = 0;
 
   // Allocate a trapframe page.
@@ -359,35 +359,39 @@ int fork(void) {
 
 
   // Copy mmaped pages from parent to child.
-  struct mmap_mapping_page *mmaped    = p->mmap_mappings;
+  struct mmap_mapping_page *mmaped = p->mmap_mappings;
   struct mmap_mapping_page *np_mmaped = 0;
-  struct mmap_mapping_page *np_prev   = 0;
-  if (mmaped) {
-    np_mmaped               = kalloc();
-    np->mmap_mappings       = np_mmaped;
+  struct mmap_mapping_page *np_prev = 0;
+  if(mmaped) {
+    np_mmaped = kalloc();
+    np->mmap_mappings = np_mmaped;
     np->mmap_mappings->next = 0;
   }
-  while (mmaped) {
+  while(mmaped) {
     memmove(np->mmap_mappings, mmaped, sizeof(struct mmap_mapping_page));
-    if (np_mmaped == 0) {
+    if(np_mmaped == 0) {
       np_mmaped = kalloc();
       memmove(np_mmaped, mmaped, sizeof(struct mmap_mapping_page));
       np_mmaped->next = 0;
-      np_prev->next   = np_mmaped;
+      np_prev->next = np_mmaped;
     }
-    for (uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
-      if (!mmaped->mappings[i].is_valid) continue;
+    for(uint32 i = 0; i < MMAP_MAPPING_PAGE_N; i++) {
+      if(!mmaped->mappings[i].is_valid) continue;
       // printf("fork: copying mapping %d @ %p\n", i, mmaped->mappings[i].va);
       int perm = *walk(p->pagetable, mmaped->mappings[i].va, 0) & 0b11111;
-      for (uint32 j = 0; j < mmaped->mappings[i].npages; j++) {
+      for(uint32 j = 0; j < mmaped->mappings[i].npages; j++) {
         uint64 va = mmaped->mappings[i].va + j * PGSIZE;
         uint64 pa = walkaddr(p->pagetable, va);
-        if (pa == 0) { panic("fork: pa is 0"); }
-        if (mappages(np->pagetable, va, PGSIZE, pa, perm) != 0) { panic("fork: mappages"); }
+        if(pa == 0) {
+          panic("fork: pa is 0");
+        }
+        if(mappages(np->pagetable, va, PGSIZE, pa, perm) != 0) {
+          panic("fork: mappages");
+        }
       }
     }
-    mmaped    = mmaped->next;
-    np_prev   = np_mmaped;
+    mmaped = mmaped->next;
+    np_prev = np_mmaped; 
     np_mmaped = np_mmaped->next;
   }
 

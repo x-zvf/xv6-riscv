@@ -8,7 +8,7 @@
  */
 pagetable_t kernel_pagetable;
 
-extern char etext[];      // kernel.ld sets this to end of kernel code.
+extern char etext[]; // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
@@ -73,7 +73,7 @@ void kvminithart() {
 //   21..29 -- 9 bits of level-1 index.
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
-__attribute__((no_sanitize("address"))) pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
+pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
   if (va >= MAXVA) panic("walk");
 
   for (int level = 2; level > 0; level--) {
@@ -255,7 +255,9 @@ uint64 uvmmap(pagetable_t pagetable, struct mmap_mapping_page *mmapped, uint64 p
             if (found) break;
             mp = mp->next;
           }
-          if (!found) { panic("uvmmap: MAP_FIXED failed, but no mapping was found\n"); }
+          if (!found) {
+            panic("uvmmap: MAP_FIXED failed, but no mapping was found\n");
+          }
         }
       }
       map_at = prefferered_addr;

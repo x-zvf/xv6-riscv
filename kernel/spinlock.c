@@ -2,7 +2,7 @@
 
 #include "defs.h"
 
-__attribute__((no_sanitize("address"))) void initlock(struct spinlock *lk, char *name) {
+void initlock(struct spinlock *lk, char *name) {
   lk->name   = name;
   lk->locked = 0;
   lk->cpu    = 0;
@@ -10,7 +10,7 @@ __attribute__((no_sanitize("address"))) void initlock(struct spinlock *lk, char 
 
 // Acquire the lock.
 // Loops (spins) until the lock is acquired.
-__attribute__((no_sanitize("address"))) void acquire(struct spinlock *lk) {
+void acquire(struct spinlock *lk) {
   push_off(); // disable interrupts to avoid deadlock.
   if (holding(lk)) panic("acquire");
 
@@ -32,7 +32,7 @@ __attribute__((no_sanitize("address"))) void acquire(struct spinlock *lk) {
 }
 
 // Release the lock.
-__attribute__((no_sanitize("address"))) void release(struct spinlock *lk) {
+void release(struct spinlock *lk) {
   if (!holding(lk)) panic("release");
 
   lk->cpu = 0;
@@ -59,7 +59,7 @@ __attribute__((no_sanitize("address"))) void release(struct spinlock *lk) {
 
 // Check whether this cpu is holding the lock.
 // Interrupts must be off.
-__attribute__((no_sanitize("address"))) int holding(struct spinlock *lk) {
+int holding(struct spinlock *lk) {
   int r;
   r = (lk->locked && lk->cpu == mycpu());
   return r;
@@ -68,7 +68,8 @@ __attribute__((no_sanitize("address"))) int holding(struct spinlock *lk) {
 // push_off/pop_off are like intr_off()/intr_on() except that they are matched:
 // it takes two pop_off()s to undo two push_off()s.  Also, if interrupts
 // are initially off, then push_off, pop_off leaves them off.
-__attribute__((no_sanitize("address"))) void push_off(void) {
+
+void push_off(void) {
   int old = intr_get();
 
   intr_off();
@@ -76,7 +77,7 @@ __attribute__((no_sanitize("address"))) void push_off(void) {
   mycpu()->noff += 1;
 }
 
-__attribute__((no_sanitize("address"))) void pop_off(void) {
+void pop_off(void) {
   struct cpu *c = mycpu();
   if (intr_get()) panic("pop_off - interruptible");
   if (c->noff < 1) panic("pop_off");

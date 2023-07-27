@@ -1,6 +1,6 @@
 #include "types.h"
 
-__attribute__((no_sanitize("address"))) void *memset(void *dst, int c, uint n) {
+void *memset(void *dst, int c, uint n) {
   char *cdst = (char *)dst;
   int i;
   for (i = 0; i < n; i++) { cdst[i] = c; }
@@ -77,12 +77,4 @@ int strlen(const char *s) {
   for (n = 0; s[n]; n++)
     ;
   return n;
-}
-
-char *strrchr(const char *s, int c) {
-  const char *res = NULL;
-  for (uint i = 0; s[i]; i++) {
-    if (s[i] == c) res = s + i;
-  }
-  return (char *)res;
 }

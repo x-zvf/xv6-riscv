@@ -19,7 +19,7 @@
 #define IER 1 // interrupt enable register
 #define IER_RX_ENABLE (1 << 0)
 #define IER_TX_ENABLE (1 << 1)
-#define FCR 2                   // FIFO control register
+#define FCR 2 // FIFO control register
 #define FCR_FIFO_ENABLE (1 << 0)
 #define FCR_FIFO_CLEAR (3 << 1) // clear the content of the two FIFOs
 #define ISR 2                   // interrupt status register
@@ -37,8 +37,8 @@
 struct spinlock uart_tx_lock;
 #define UART_TX_BUF_SIZE 32
 char uart_tx_buf[UART_TX_BUF_SIZE];
-uint64 uart_tx_w;             // write next to uart_tx_buf[uart_tx_w % UART_TX_BUF_SIZE]
-uint64 uart_tx_r;             // read next from uart_tx_buf[uart_tx_r % UART_TX_BUF_SIZE]
+uint64 uart_tx_w; // write next to uart_tx_buf[uart_tx_w % UART_TX_BUF_SIZE]
+uint64 uart_tx_r; // read next from uart_tx_buf[uart_tx_r % UART_TX_BUF_SIZE]
 
 extern volatile int panicked; // from printf.c
 
@@ -99,7 +99,7 @@ void uartputc(int c) {
 // use interrupts, for use by kernel printf() and
 // to echo characters. it spins waiting for the uart's
 // output register to be empty.
-__attribute__((no_sanitize("address"))) void uartputc_sync(int c) {
+void uartputc_sync(int c) {
   push_off();
 
   if (panicked) {
