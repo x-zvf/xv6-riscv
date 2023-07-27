@@ -218,7 +218,7 @@ found:
 static void freeproc(struct proc *p) {
   if (p->trapframe) kfree((void *)p->trapframe);
   p->trapframe = 0;
-  if (p->pagetable) proc_freepagetable(p->pagetable, p->sz, p->mmap_mappings);
+  if (p->pagetable) proc_freepagetable(p->pagetable, p->base, p->sz, p->mmap_mappings);
   p->pagetable = 0;
   p->sz        = 0;
   p->pid       = 0;
@@ -245,7 +245,7 @@ pagetable_t proc_pagetable(struct proc *p) {
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
   if (mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampoline, PTE_R | PTE_X) < 0) {
-    uvmfree(pagetable, 0);
+    uvmfree(pagetable, 0, 0);
     return 0;
   }
 
@@ -253,7 +253,7 @@ pagetable_t proc_pagetable(struct proc *p) {
   // trampoline.S.
   if (mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->trapframe), PTE_R | PTE_W) < 0) {
     uvmunmap(pagetable, TRAMPOLINE, 1, 0);
-    uvmfree(pagetable, 0);
+    uvmfree(pagetable, 0, 0);
     return 0;
   }
 
@@ -262,7 +262,7 @@ pagetable_t proc_pagetable(struct proc *p) {
 
 // Free a process's page table, and free the
 // physical memory it refers to.
-void proc_freepagetable(pagetable_t pagetable, uint64 sz, struct mmap_mapping_page *mmaped) {
+void proc_freepagetable(pagetable_t pagetable, uint64 base, uint64 sz, struct mmap_mapping_page *mmaped) {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
 
@@ -283,7 +283,7 @@ void proc_freepagetable(pagetable_t pagetable, uint64 sz, struct mmap_mapping_pa
     mmaped = mmaped->next;
   }
 
-  uvmfree(pagetable, sz);
+  uvmfree(pagetable, base, sz);
 }
 
 // a user program that calls exec("/init")
@@ -349,12 +349,13 @@ int fork(void) {
   if ((np = allocproc()) == 0) { return -1; }
 
   // Copy user memory from parent to child.
-  if (uvmcopy(p->pagetable, np->pagetable, p->sz) < 0) {
+  if (uvmcopy(p->pagetable, np->pagetable, p->base, p->sz) < 0) {
     freeproc(np);
     release(&np->lock);
     return -1;
   }
-  np->sz = p->sz;
+  np->sz   = p->sz;
+  np->base = p->base;
 
 
   // Copy mmaped pages from parent to child.

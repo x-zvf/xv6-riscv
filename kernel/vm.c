@@ -344,8 +344,8 @@ void freewalk(pagetable_t pagetable) {
 
 // Free user memory pages,
 // then free page-table pages.
-void uvmfree(pagetable_t pagetable, uint64 sz) {
-  if (sz > 0) uvmunmap(pagetable, 0, PGROUNDUP(sz) / PGSIZE, 1);
+void uvmfree(pagetable_t pagetable, uint64 base, uint64 sz) {
+  if (sz > 0) uvmunmap(pagetable, base, PGROUNDUP(sz - base) / PGSIZE, 1);
   freewalk(pagetable);
 }
 
@@ -355,13 +355,13 @@ void uvmfree(pagetable_t pagetable, uint64 sz) {
 // physical memory.
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
-int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz) {
+int uvmcopy(pagetable_t old, pagetable_t new, uint64 base, uint64 sz) {
   pte_t *pte;
   uint64 pa, i;
   uint flags;
   char *mem;
 
-  for (i = 0; i < sz; i += PGSIZE) {
+  for (i = base; i < sz; i += PGSIZE) {
     if ((pte = walk(old, i, 0)) == 0) panic("uvmcopy: pte should exist");
     if ((*pte & PTE_V) == 0) panic("uvmcopy: page not present");
     pa    = PTE2PA(*pte);

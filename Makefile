@@ -32,6 +32,7 @@ OBJS = \
   $K/virtio_disk.o  \
   $K/cxxtest.o \
   $K/terminate.o \
+  $K/debug.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
@@ -168,6 +169,7 @@ UPROGS=\
 	$U/_malloc_test\
 	$U/_malloc_test_cxx\
 	$U/_terminate\
+	$U/_traceme
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

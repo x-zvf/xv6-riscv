@@ -65,6 +65,7 @@ void usertrap(void) {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     printf("            [%s]\n", scl[r_scause()]);
+    proc_backtrace(p);
     setkilled(p);
   }
 
@@ -96,7 +97,7 @@ void usertrapret(void) {
   p->trapframe->kernel_satp   = r_satp();           // kernel page table
   p->trapframe->kernel_sp     = p->kstack + PGSIZE; // process's kernel stack
   p->trapframe->kernel_trap   = (uint64)usertrap;
-  p->trapframe->kernel_hartid = r_tp();             // hartid for cpuid()
+  p->trapframe->kernel_hartid = r_tp(); // hartid for cpuid()
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.

@@ -1,4 +1,5 @@
 #include "defs.h"
+#include "colors.h"
 
 volatile static int started = 0;
 
@@ -8,7 +9,7 @@ void main() {
     consoleinit();
     printfinit();
     printf("\n");
-    printf("xv6 kernel is booting\n");
+    printf(C_FG_GREEN "xv6" C_RESET " kernel is booting\n");
     printf("\n");
     kinit();            // physical page allocator
     kvminit();          // create kernel page table

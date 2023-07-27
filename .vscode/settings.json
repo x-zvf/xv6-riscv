@@ -6,7 +6,10 @@
         "**/*.asm": true,
         "**/*.d": true,
         "**/*.o": true,
-        "**/*.sym": true
+        "**/*.sym": true,
+        "**/_*": true,
+        "user/initcode": true,
+        "user/initcode.out": true,
     },
     "editor.formatOnSave": true
 }

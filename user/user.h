@@ -43,7 +43,8 @@ char *sbrk(int);
 int sleep(int);
 int uptime(void);
 void cxx(int);
-void term();
+void term(void);
+void backtrace(void);
 
 // char *mmap(char *, int len, int prot, int flags, int fildes, int off);
 // int munmap(char *, int len);

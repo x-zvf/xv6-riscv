@@ -36,6 +36,7 @@ extern "C" {
 #define SYS_term 101
 #define SYS_mmap 110
 #define SYS_munmap 111
+#define SYS_backtrace 120
 
 
 

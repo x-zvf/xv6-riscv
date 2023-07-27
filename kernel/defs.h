@@ -34,6 +34,10 @@ void consputc(int);
 // exec.c
 int exec(char *, char **);
 
+//debug.c
+void proc_backtrace(struct proc *p);
+void kernel_backtrace(void);
+
 // file.c
 struct file *filealloc(void);
 void fileclose(struct file *);
@@ -100,7 +104,7 @@ int growproc(int);
 void proc_mapstacks(pagetable_t);
 pagetable_t proc_pagetable(struct proc *);
 struct mmap_mapping_page;
-void proc_freepagetable(pagetable_t, uint64, struct mmap_mapping_page *);
+void proc_freepagetable(pagetable_t, uint64, uint64, struct mmap_mapping_page *);
 int kill(int);
 int killed(struct proc *);
 void setkilled(struct proc *);
@@ -178,8 +182,8 @@ uint64 uvmalloc(pagetable_t, uint64, uint64, int);
 struct inode;
 uint64 uvmmap(pagetable_t, struct mmap_mapping_page *, uint64, uint64, int, int, struct inode *);
 uint64 uvmdealloc(pagetable_t, uint64, uint64);
-int uvmcopy(pagetable_t, pagetable_t, uint64);
-void uvmfree(pagetable_t, uint64);
+int uvmcopy(pagetable_t, pagetable_t, uint64, uint64);
+void uvmfree(pagetable_t, uint64, uint64);
 void uvmunmap(pagetable_t, uint64, uint64, int);
 void uvmclear(pagetable_t, uint64);
 pte_t *walk(pagetable_t, uint64, int);
