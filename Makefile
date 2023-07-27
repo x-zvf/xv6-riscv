@@ -84,6 +84,12 @@ CXXFLAGS += $(SANIFLAGS)
 CXXFLAGS += -I.
 CXXFLAGS += $(shell $(CXX) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 
+$K/%.o: $K/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$U/%.o: $U/%.c
+	$(CC) $(CFLAGS) $(SANIFLAGS) -c -o $@ $<
+
 # Disable PIE when possible (for Ubuntu 16.10 toolchain)
 ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]no-pie'),)
 CFLAGS += -fno-pie -no-pie
