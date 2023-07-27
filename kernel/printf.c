@@ -85,8 +85,9 @@ void printf(char *fmt, ...) {
 
 void panic(char *s) {
   pr.locking = 0;
-  printf(C_FG_RED C_BG_BLACK"panic: ");
-  printf(C_FG_YELLOW "%s"C_RESET"\n", s);
+  printf(C_FG_RED C_BG_BLACK "panic: ");
+  printf(C_FG_YELLOW "%s" C_RESET "\n", s);
+  kernel_backtrace();
   panicked = 1; // freeze uart output from other CPUs
   timerhalt();
   for (;;)

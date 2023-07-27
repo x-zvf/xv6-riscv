@@ -37,6 +37,7 @@ int exec(char *, char **);
 
 //debug.c
 void proc_backtrace(struct proc *p);
+void kernel_backtrace(void);
 
 // file.c
 struct file *filealloc(void);

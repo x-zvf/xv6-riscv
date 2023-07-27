@@ -38,3 +38,25 @@ void proc_backtrace(struct proc *p) {
     C_RESET C_BG_BLACK C_FG_BLUE "====================" C_FG_YELLOW " end stacktrace " C_FG_BLUE
                                  "===================" C_RESET "\n");
 }
+
+void kernel_backtrace() {
+  uint64 fp           = r_fp();
+  uint64 stack_bottom = PGROUNDUP(fp);
+  uint64 ra           = r_ra();
+
+  printf(C_RESET "\n" C_BG_BLACK C_FG_BLUE "====================" C_FG_YELLOW
+                 " stacktrace (kernel) " C_FG_BLUE "====================" C_RESET "\n");
+  // printf(C_RESET C_FG_GREEN "[@] " C_FG_WHITE "pc = " C_FG_BLUE "%p\n", pc);
+  int frame = 1;
+  while (1) {
+    printf(C_RESET C_FG_GREEN "[%d] " C_FG_WHITE "ra = " C_FG_BLUE "%p" C_FG_WHITE
+                              "\t\tfp = " C_FG_YELLOW "%p\n",
+      frame++, ra, fp);
+    if (fp >= stack_bottom) break;
+    ra = *(uint64 *)(fp - 8);
+    fp = *(uint64 *)(fp - 16);
+  }
+  printf(
+    C_RESET C_BG_BLACK C_FG_BLUE "====================" C_FG_YELLOW " end stacktrace " C_FG_BLUE
+                                 "===================" C_RESET "\n");
+}

@@ -9,7 +9,7 @@ void main() {
     consoleinit();
     printfinit();
     printf("\n");
-    printf(C_FG_GREEN"xv6"C_RESET" kernel is booting\n");
+    printf(C_FG_GREEN "xv6" C_RESET " kernel is booting\n");
     printf("\n");
     kinit();            // physical page allocator
     kvminit();          // create kernel page table
