@@ -18,6 +18,4 @@ user/usys.S
 .devenv.sh
 .idea/
 devenv.sh
-libsanitizer
-.gitignore
-.vscode/
+xv6-console-out.log
