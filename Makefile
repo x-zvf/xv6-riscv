@@ -192,6 +192,11 @@ QEMUOPTS.drive = -drive file=fs.img,if=none,format=raw,id=x0
 qemu: $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS) $(QEMUOPTS.drive)
 
+qemu-post: $K/kernel fs.img
+	$(QEMU) $(QEMUOPTS) $(QEMUOPTS.drive) | tee xv6-console-out.log
+	@printf "\n\n==== Postprocessed output ===="
+	@python3 ./output_postprocessor.py xv6-console-out.log
+
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
