@@ -69,6 +69,7 @@ def handle_line(line):
             line = processor.process(line)
             print(line, end="")
             break
+
 if __name__ == "__main__":
     for line in fileinput.input(encoding="utf-8"):
         handle_line(line)
